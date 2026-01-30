@@ -1,13 +1,19 @@
-"""Viewing conditions score calculation.
+"""Viewing conditions score calculation with weather API integration.
 
 Combines weather (clouds), moon brightness, and darkness level
 into an overall "stargazing score" for tonight.
+
+Uses Open-Meteo API for real-time weather data (free, no API key).
 """
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
+from datetime import date
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class CloudCover(Enum):
@@ -265,7 +271,27 @@ def get_viewing_conditions(
 
 
 class ViewingClient:
-    """Client interface for viewing conditions (for consistency with other API clients)."""
+    """Client for viewing conditions with weather API integration."""
+
+    def __init__(self, timeout: float = 10.0):
+        """Initialize the viewing client."""
+        self._weather_client = None
+        self._moon_client = None
+        self.timeout = timeout
+
+    async def _get_weather_client(self):
+        """Lazy-load weather client."""
+        if self._weather_client is None:
+            from .weather import WeatherClient
+            self._weather_client = WeatherClient(timeout=self.timeout)
+        return self._weather_client
+
+    async def _get_moon_client(self):
+        """Lazy-load moon client."""
+        if self._moon_client is None:
+            from .moon import MoonClient
+            self._moon_client = MoonClient(timeout=self.timeout)
+        return self._moon_client
 
     async def get_viewing_conditions(
         self,
@@ -275,7 +301,7 @@ class ViewingClient:
         is_moon_up: bool = True,
         light_pollution_factor: float = 0.0,
     ) -> ViewingConditions:
-        """Get viewing conditions assessment."""
+        """Get viewing conditions assessment (manual input)."""
         return get_viewing_conditions(
             cloud_cover_percent=cloud_cover_percent,
             moon_illumination_percent=moon_illumination_percent,
@@ -284,6 +310,65 @@ class ViewingClient:
             light_pollution_factor=light_pollution_factor,
         )
 
+    async def get_viewing_conditions_for_location(
+        self,
+        latitude: float,
+        longitude: float,
+        target_date: date | None = None,
+        light_pollution_factor: float = 0.0,
+    ) -> ViewingConditions:
+        """
+        Get viewing conditions using real weather data from Open-Meteo.
+
+        Args:
+            latitude: Observer latitude
+            longitude: Observer longitude
+            target_date: Date to check (defaults to today)
+            light_pollution_factor: Light pollution 0-1 (manual input)
+
+        Returns:
+            ViewingConditions with real weather data
+        """
+        if target_date is None:
+            target_date = date.today()
+
+        # Get weather data
+        weather_client = await self._get_weather_client()
+        stargazing_data = await weather_client.get_stargazing_conditions(
+            latitude=latitude,
+            longitude=longitude,
+            target_date=target_date,
+        )
+
+        # Default cloud cover if weather API fails
+        cloud_cover = 0.0
+        if stargazing_data.get("available") and stargazing_data.get("has_nighttime_data"):
+            cloud_cover = stargazing_data.get("avg_cloud_cover_percent", 0.0)
+        elif stargazing_data.get("available"):
+            # Use current cloud cover as fallback
+            current_cloud = await weather_client.get_current_cloud_cover(latitude, longitude)
+            if current_cloud is not None:
+                cloud_cover = current_cloud
+
+        # Get moon data
+        moon_client = await self._get_moon_client()
+        moon_info = await moon_client.get_moon_info(
+            target_date=target_date,
+            latitude=latitude,
+            longitude=longitude,
+        )
+
+        return get_viewing_conditions(
+            cloud_cover_percent=cloud_cover,
+            moon_illumination_percent=moon_info.illumination_percent,
+            is_astronomical_night=True,  # Assume night if checking conditions
+            is_moon_up=True,  # Conservative assumption
+            light_pollution_factor=light_pollution_factor,
+        )
+
     async def close(self) -> None:
-        """No-op for API consistency."""
-        pass
+        """Close HTTP clients."""
+        if self._weather_client:
+            await self._weather_client.close()
+        if self._moon_client:
+            await self._moon_client.close()

@@ -212,10 +212,45 @@ class TestMoonClient:
         assert isinstance(info, MoonInfo)
 
     @pytest.mark.asyncio
+    async def test_get_moon_info_with_location(self, client):
+        """Test getting moon info with location (uses USNO API)."""
+        info = await client.get_moon_info(
+            target_date=date(2026, 1, 30),
+            latitude=40.71,
+            longitude=-74.01,
+        )
+        await client.close()
+
+        assert info is not None
+        assert isinstance(info, MoonInfo)
+        # With location, should use USNO API
+        # Note: May fall back to local if API fails
+        assert info.source in ["usno", "local"]
+
+    @pytest.mark.asyncio
     async def test_get_upcoming_events(self, client):
         """Test getting upcoming events through client."""
         events = await client.get_upcoming_events(days=30)
         assert isinstance(events, list)
+
+    @pytest.mark.asyncio
+    async def test_get_upcoming_events_usno(self, client):
+        """Test getting upcoming events from USNO API."""
+        events = await client.get_upcoming_events(
+            days=60,
+            after=datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc),
+        )
+        await client.close()
+
+        assert len(events) > 0
+        # Check that we got primary phases
+        phases = {e.phase for e in events}
+        assert any(p in phases for p in [
+            MoonPhase.FULL_MOON,
+            MoonPhase.NEW_MOON,
+            MoonPhase.FIRST_QUARTER,
+            MoonPhase.LAST_QUARTER,
+        ])
 
     @pytest.mark.asyncio
     async def test_close(self, client):

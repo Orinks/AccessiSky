@@ -44,13 +44,19 @@ python -m accessisky
 
 AccessiSky uses free, open APIs that require no API keys:
 
-- **[Open Notify](http://open-notify.org/)** - ISS current position
-- **[Sunrise-Sunset.org](https://sunrise-sunset.org/api)** - Sun times and twilight
+### Live API Data
+- **[Open Notify](http://open-notify.org/)** - ISS current position and pass predictions
+- **[Sunrise-Sunset.org](https://sunrise-sunset.org/api)** - Sun times and all twilight phases (civil, nautical, astronomical)
 - **[NOAA SWPC](https://www.swpc.noaa.gov/)** - Space weather, Kp index, aurora forecasts
-- **Moon phases** - Calculated locally using astronomical algorithms
+- **[USNO (US Naval Observatory)](https://aa.usno.navy.mil/data/api)** - Moon phases, illumination, rise/set times
+- **[Open-Meteo](https://open-meteo.com/)** - Weather data for viewing conditions (cloud cover, visibility)
+
+### Local Calculations (with API fallback)
+- **Moon phases** - USNO API primary, local astronomical algorithms as fallback
 - **Meteor showers** - IMO (International Meteor Organization) data, calculated locally
 - **Planet visibility** - Simplified orbital mechanics, calculated locally
 - **Eclipses** - NASA eclipse data for 2025-2030, stored locally
+- **Viewing conditions** - Combines weather API data with local calculations
 
 ## Development
 

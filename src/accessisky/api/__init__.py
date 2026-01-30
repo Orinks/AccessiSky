@@ -58,6 +58,12 @@ from .viewing import (
     get_moon_interference,
     get_viewing_conditions,
 )
+from .weather import (
+    DailyWeather,
+    HourlyWeather,
+    WeatherClient,
+    WeatherForecast,
+)
 
 __all__ = [
     # ISS
@@ -122,4 +128,9 @@ __all__ = [
     "calculate_viewing_score",
     "get_moon_interference",
     "get_viewing_conditions",
+    # Weather
+    "WeatherClient",
+    "WeatherForecast",
+    "HourlyWeather",
+    "DailyWeather",
 ]
