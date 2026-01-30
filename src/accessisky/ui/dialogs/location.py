@@ -26,6 +26,7 @@ class Location:
     latitude: float
     longitude: float
     name: str = ""
+    timezone: str | None = None
 
     def __str__(self) -> str:
         if self.name:
@@ -38,6 +39,7 @@ class Location:
             "latitude": self.latitude,
             "longitude": self.longitude,
             "name": self.name,
+            "timezone": self.timezone,
         }
 
     @classmethod
@@ -47,6 +49,7 @@ class Location:
             latitude=data.get("latitude", 0.0),
             longitude=data.get("longitude", 0.0),
             name=data.get("name", ""),
+            timezone=data.get("timezone"),
         )
 
 
@@ -230,6 +233,7 @@ class LocationDialog(wx.Dialog):
             latitude=result.latitude,
             longitude=result.longitude,
             name=result.display_name,
+            timezone=result.timezone,
         )
         self.selection_text.SetLabel(
             f"Selected: {result.display_name}\n"

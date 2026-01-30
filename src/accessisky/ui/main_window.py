@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 import wx
@@ -871,18 +872,36 @@ class MainWindow(wx.Frame):
                 self.location.longitude,
             )
 
+        def format_time_dual(dt: datetime, tz_name: str | None) -> str:
+            """Format a datetime with both local and UTC times."""
+            utc_str = dt.strftime("%H:%M:%S UTC")
+            if tz_name:
+                try:
+                    from zoneinfo import ZoneInfo
+
+                    local_tz = ZoneInfo(tz_name)
+                    local_dt = dt.astimezone(local_tz)
+                    local_str = local_dt.strftime("%H:%M:%S")
+                    # Get short timezone abbreviation
+                    tz_abbr = local_dt.strftime("%Z") or tz_name.split("/")[-1]
+                    return f"{local_str} {tz_abbr} ({utc_str})"
+                except Exception:
+                    pass
+            return utc_str
+
         try:
             times = run_async(fetch())
             if times:
+                tz = self.location.timezone
                 text = (
-                    f"Sunrise: {times.sunrise.strftime('%H:%M:%S UTC')}\n"
-                    f"Sunset: {times.sunset.strftime('%H:%M:%S UTC')}\n"
-                    f"Solar Noon: {times.solar_noon.strftime('%H:%M:%S UTC')}\n"
-                    f"\nTwilight Times:\n"
+                    f"Sunrise: {format_time_dual(times.sunrise, tz)}\n"
+                    f"Sunset: {format_time_dual(times.sunset, tz)}\n"
+                    f"Solar Noon: {format_time_dual(times.solar_noon, tz)}\n"
+                    f"\nTwilight Times (UTC):\n"
                     f"Civil: {times.civil_twilight_begin.strftime('%H:%M')} - {times.civil_twilight_end.strftime('%H:%M')}\n"
                     f"Nautical: {times.nautical_twilight_begin.strftime('%H:%M')} - {times.nautical_twilight_end.strftime('%H:%M')}\n"
                     f"Astronomical: {times.astronomical_twilight_begin.strftime('%H:%M')} - {times.astronomical_twilight_end.strftime('%H:%M')}\n"
-                    f"\nGolden Hour:\n"
+                    f"\nGolden Hour (UTC):\n"
                     f"Morning: until {times.golden_hour_morning_end.strftime('%H:%M')}\n"
                     f"Evening: from {times.golden_hour_evening_start.strftime('%H:%M')}"
                 )
