@@ -20,6 +20,15 @@ from .moon import (
     get_moon_phase,
     get_upcoming_events,
 )
+from .planets import (
+    Planet,
+    PlanetClient,
+    PlanetInfo,
+    PlanetVisibility,
+    get_all_planets,
+    get_planet_info,
+    get_visible_planets,
+)
 from .sun import SunClient, SunTimes
 
 __all__ = [
@@ -46,6 +55,14 @@ __all__ = [
     "get_upcoming_showers",
     "get_active_showers",
     "get_shower_info",
+    # Planets
+    "Planet",
+    "PlanetClient",
+    "PlanetInfo",
+    "PlanetVisibility",
+    "get_all_planets",
+    "get_visible_planets",
+    "get_planet_info",
     # Aurora
     "AuroraClient",
     "AuroraForecast",
