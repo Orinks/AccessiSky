@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Tonight's summary feature (in progress)
+- **Tonight's Summary**: Plain-language overview of tonight's sky conditions
+  - Aggregates moon phase, ISS passes, visible planets, meteor showers, aurora activity, and viewing conditions
+  - Natural language summary designed for screen readers
+  - New "Tonight" tab as first tab for quick access (F1)
+  - Accessible UI with proper labels for all elements
 - Daily briefing (in progress)
 
 ## [0.2.0] - 2026-01-30

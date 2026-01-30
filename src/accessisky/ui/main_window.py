@@ -17,6 +17,7 @@ from ..api.meteors import MeteorClient, get_active_showers, get_upcoming_showers
 from ..api.moon import MoonClient
 from ..api.planets import PlanetClient, get_visible_planets
 from ..api.sun import SunClient
+from ..api.tonight import TonightSummary
 from .dialogs.location import Location, LocationDialog, load_location
 
 if TYPE_CHECKING:
@@ -54,6 +55,7 @@ class MainWindow(wx.Frame):
         self.meteor_client = MeteorClient()
         self.planet_client = PlanetClient()
         self.eclipse_client = EclipseClient()
+        self.tonight_client = TonightSummary()
 
         # Load saved location
         self.location: Location | None = load_location()
@@ -87,25 +89,29 @@ class MainWindow(wx.Frame):
 
         # View menu
         view_menu = wx.Menu()
+        self.tonight_menu_item = view_menu.Append(
+            wx.ID_ANY, "&Tonight's Summary\tF1", "View tonight's sky summary"
+        )
+        view_menu.AppendSeparator()
         self.iss_menu_item = view_menu.Append(
-            wx.ID_ANY, "&ISS Tracker\tF1", "View ISS position and passes"
+            wx.ID_ANY, "&ISS Tracker\tF2", "View ISS position and passes"
         )
         self.moon_menu_item = view_menu.Append(
-            wx.ID_ANY, "&Moon Phases\tF2", "View moon phase information"
+            wx.ID_ANY, "&Moon Phases\tF3", "View moon phase information"
         )
         self.sun_menu_item = view_menu.Append(
-            wx.ID_ANY, "S&un Times\tF3", "View sunrise and sunset"
+            wx.ID_ANY, "S&un Times\tF4", "View sunrise and sunset"
         )
         self.aurora_menu_item = view_menu.Append(
-            wx.ID_ANY, "&Aurora Forecast\tF4", "View space weather and aurora"
+            wx.ID_ANY, "&Aurora Forecast\tF5", "View space weather and aurora"
         )
         view_menu.AppendSeparator()
         self.meteor_menu_item = view_menu.Append(
-            wx.ID_ANY, "&Meteor Showers\tF5", "View meteor shower calendar"
+            wx.ID_ANY, "&Meteor Showers\tF6", "View meteor shower calendar"
         )
-        self.planets_menu_item = view_menu.Append(wx.ID_ANY, "&Planets\tF6", "View visible planets")
+        self.planets_menu_item = view_menu.Append(wx.ID_ANY, "&Planets\tF7", "View visible planets")
         self.eclipse_menu_item = view_menu.Append(
-            wx.ID_ANY, "&Eclipses\tF7", "View upcoming eclipses"
+            wx.ID_ANY, "&Eclipses\tF8", "View upcoming eclipses"
         )
         menubar.Append(view_menu, "&View")
 
@@ -130,6 +136,10 @@ class MainWindow(wx.Frame):
         # Notebook for different views
         self.notebook = wx.Notebook(panel)
         self.notebook.SetName("Data views - use Ctrl+Tab to switch tabs")
+
+        # Tonight Tab (first for quick access)
+        self.tonight_panel = self._create_tonight_panel(self.notebook)
+        self.notebook.AddPage(self.tonight_panel, "Tonight")
 
         # ISS Tab
         self.iss_panel = self._create_iss_panel(self.notebook)
@@ -184,6 +194,50 @@ class MainWindow(wx.Frame):
         # Status bar
         self.CreateStatusBar()
         self.SetStatusText("Ready")
+
+    def _create_tonight_panel(self, parent: wx.Window) -> wx.Panel:
+        """Create the Tonight's Summary panel."""
+        panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Summary header
+        header_label = wx.StaticText(panel, label="Tonight's Sky Summary")
+        header_label.SetName("Section: Tonight's Sky Summary")
+        header_label.SetFont(header_label.GetFont().Bold().Scaled(1.3))
+        sizer.Add(header_label, 0, wx.ALL, 10)
+
+        # Main summary text - large, readable
+        self.tonight_summary_text = wx.TextCtrl(
+            panel,
+            value="Set your location to see tonight's sky summary.\n\nClick 'Set Location' below or press Ctrl+L.",
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_BESTWRAP,
+            size=(-1, 200),
+        )
+        self.tonight_summary_text.SetName("Tonight's sky summary - plain language overview")
+        # Use slightly larger font for readability
+        font = self.tonight_summary_text.GetFont()
+        font.SetPointSize(font.GetPointSize() + 1)
+        self.tonight_summary_text.SetFont(font)
+        sizer.Add(self.tonight_summary_text, 0, wx.ALL | wx.EXPAND, 10)
+
+        # Details section
+        details_label = wx.StaticText(panel, label="Details")
+        details_label.SetName("Section: Tonight's Details")
+        details_label.SetFont(details_label.GetFont().Bold())
+        sizer.Add(details_label, 0, wx.LEFT | wx.TOP, 10)
+
+        self.tonight_details_list = wx.ListBox(panel)
+        self.tonight_details_list.SetName("Detailed breakdown of tonight's sky events")
+        sizer.Add(self.tonight_details_list, 1, wx.ALL | wx.EXPAND, 10)
+
+        # Refresh button
+        refresh_btn = wx.Button(panel, label="&Refresh Tonight's Summary")
+        refresh_btn.SetName("Refresh tonight's sky summary")
+        refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_tonight)
+        sizer.Add(refresh_btn, 0, wx.ALL, 10)
+
+        panel.SetSizer(sizer)
+        return panel
 
     def _create_iss_panel(self, parent: wx.Window) -> wx.Panel:
         """Create the ISS tracking panel."""
@@ -474,25 +528,28 @@ class MainWindow(wx.Frame):
 
         # View menu shortcuts
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(0), id=self.iss_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(0), id=self.tonight_menu_item.GetId()
         )
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(1), id=self.moon_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(1), id=self.iss_menu_item.GetId()
         )
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(2), id=self.sun_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(2), id=self.moon_menu_item.GetId()
         )
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(3), id=self.aurora_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(3), id=self.sun_menu_item.GetId()
         )
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(4), id=self.meteor_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(4), id=self.aurora_menu_item.GetId()
         )
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(5), id=self.planets_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(5), id=self.meteor_menu_item.GetId()
         )
         self.Bind(
-            wx.EVT_MENU, lambda e: self.notebook.SetSelection(6), id=self.eclipse_menu_item.GetId()
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(6), id=self.planets_menu_item.GetId()
+        )
+        self.Bind(
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(7), id=self.eclipse_menu_item.GetId()
         )
 
         self.set_location_btn.Bind(wx.EVT_BUTTON, self._on_set_location)
@@ -510,6 +567,7 @@ class MainWindow(wx.Frame):
         # Run async loading in a background thread
         def load():
             try:
+                self._load_tonight_data()
                 self._load_iss_data()
                 self._load_moon_data()
                 self._load_sun_data()
@@ -534,6 +592,84 @@ class MainWindow(wx.Frame):
         """Called when data loading fails."""
         self.status_label.SetLabel(f"Error loading data: {error}")
         self.SetStatusText("Error loading data")
+
+    def _load_tonight_data(self) -> None:
+        """Load tonight's summary data."""
+        if not self.location:
+            wx.CallAfter(
+                self.tonight_summary_text.SetValue,
+                "Please set your location to see tonight's sky summary.\n\n"
+                "Click 'Set Location' below or press Ctrl+L to set your location.",
+            )
+            wx.CallAfter(self.tonight_details_list.Set, ["Location not set"])
+            return
+
+        async def fetch():
+            return await self.tonight_client.get_summary(
+                latitude=self.location.latitude,
+                longitude=self.location.longitude,
+            )
+
+        try:
+            data = run_async(fetch())
+
+            # Set main summary
+            if data.summary_text:
+                wx.CallAfter(self.tonight_summary_text.SetValue, data.summary_text)
+            else:
+                wx.CallAfter(
+                    self.tonight_summary_text.SetValue,
+                    "Tonight: Unable to load sky data. Please try refreshing.",
+                )
+
+            # Build details list
+            details = []
+
+            if data.moon_phase:
+                moon_detail = f"Moon: {data.moon_phase}"
+                if data.moon_illumination is not None:
+                    moon_detail += f" ({data.moon_illumination}% illuminated)"
+                details.append(moon_detail)
+
+            if data.iss_passes:
+                for i, pass_info in enumerate(data.iss_passes, 1):
+                    details.append(f"ISS Pass {i}: {pass_info}")
+
+            if data.visible_planets:
+                details.append(f"Visible planets: {', '.join(data.visible_planets)}")
+
+            if data.active_meteor_showers:
+                details.append(f"Active meteor showers: {', '.join(data.active_meteor_showers)}")
+
+            if data.aurora_kp is not None:
+                aurora_detail = f"Aurora: Kp {data.aurora_kp:.1f}"
+                if data.aurora_activity:
+                    aurora_detail += f" ({data.aurora_activity})"
+                details.append(aurora_detail)
+
+            if data.viewing_score is not None:
+                viewing_detail = f"Viewing conditions: {data.viewing_score}/100"
+                if data.cloud_cover_percent is not None:
+                    viewing_detail += f" (clouds: {data.cloud_cover_percent}%)"
+                details.append(viewing_detail)
+
+            if not details:
+                details = ["No detailed data available"]
+
+            wx.CallAfter(self.tonight_details_list.Set, details)
+
+        except Exception as e:
+            logger.error(f"Tonight data error: {e}")
+            wx.CallAfter(
+                self.tonight_summary_text.SetValue,
+                f"Error loading tonight's summary: {e}",
+            )
+
+    def _on_refresh_tonight(self, event: wx.CommandEvent) -> None:
+        """Handle tonight's summary refresh request."""
+        self.SetStatusText("Refreshing tonight's summary...")
+        thread = threading.Thread(target=self._load_tonight_data, daemon=True)
+        thread.start()
 
     def _load_iss_data(self) -> None:
         """Load ISS data."""
@@ -860,6 +996,7 @@ class MainWindow(wx.Frame):
 
         # Close API clients
         async def cleanup():
+            await self.tonight_client.close()
             await self.iss_client.close()
             await self.sun_client.close()
             await self.moon_client.close()
