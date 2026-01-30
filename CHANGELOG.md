@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Space weather summary (Kp index, solar wind, aurora visibility)
   - Structured data output (`as_dict()`) for programmatic access
   - Human-readable summary for screen readers
-  - Designed for external tools (Moltbot cron jobs, morning briefings)
+  - Designed for external tools and automation
 - **Meteor Shower Calendar**: 11 major annual showers with peak dates, ZHR, viewing ratings
 - **Planet Visibility**: Track all 7 observable planets with visibility status
 - **Eclipse Calendar**: Solar and lunar eclipses from 2025-2030
