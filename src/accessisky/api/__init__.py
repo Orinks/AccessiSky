@@ -1,6 +1,16 @@
 """API clients for AccessiSky."""
 
 from .aurora import AuroraClient, AuroraForecast, GeomagActivity, KpIndex, SolarWind
+from .eclipses import (
+    Eclipse,
+    EclipseClient,
+    EclipseInfo,
+    EclipseType,
+    get_all_eclipses,
+    get_eclipse_info,
+    get_next_eclipse,
+    get_upcoming_eclipses,
+)
 from .iss import ISSClient, ISSPass, ISSPosition
 from .meteors import (
     MeteorClient,
@@ -45,6 +55,15 @@ __all__ = [
     "ISSClient",
     "ISSPosition",
     "ISSPass",
+    # Eclipses
+    "Eclipse",
+    "EclipseClient",
+    "EclipseInfo",
+    "EclipseType",
+    "get_all_eclipses",
+    "get_upcoming_eclipses",
+    "get_eclipse_info",
+    "get_next_eclipse",
     # Sun
     "SunClient",
     "SunTimes",
