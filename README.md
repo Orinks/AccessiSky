@@ -26,19 +26,36 @@ AccessiSky helps you stay aware of celestial events — whether or not you can s
 
 ## Installation
 
+### Quick Start with uv (Recommended)
+
+[uv](https://docs.astral.sh/uv/) handles everything automatically — no manual environment activation needed.
+
 ```bash
 # Clone the repository
 git clone https://github.com/Orinks/AccessiSky.git
 cd AccessiSky
 
-# Create virtual environment
+# Install and run (uv creates the environment automatically)
+uv sync
+uv run python -m accessisky
+```
+
+### Traditional Method
+
+```bash
+# Clone the repository
+git clone https://github.com/Orinks/AccessiSky.git
+cd AccessiSky
+
+# Create and activate virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+# On Windows:
+.venv\Scripts\activate
+# On macOS/Linux:
+source .venv/bin/activate
 
-# Install in development mode
+# Install and run
 pip install -e .[dev]
-
-# Run the app
 python -m accessisky
 ```
 
@@ -102,17 +119,20 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Development Setup
 
 ```bash
-# Clone and install
+# Clone and install with uv
 git clone https://github.com/Orinks/AccessiSky.git
 cd AccessiSky
-pip install -e .[dev]
+uv sync
 
 # Enable pre-push lint hook
 git config core.hooksPath .githooks
 
-# Or use pre-commit (alternative)
-pip install pre-commit
-pre-commit install
+# Run tests
+uv run pytest
+
+# Run linting
+uv run ruff check src tests
+uv run ruff format src tests
 ```
 
 The pre-push hook runs `ruff check` before every push to catch lint errors early.
