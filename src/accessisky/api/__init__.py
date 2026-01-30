@@ -26,6 +26,7 @@ from .eclipses import (
     get_next_eclipse,
     get_upcoming_eclipses,
 )
+from .geocoding import GeocodingClient, GeocodingResult, search_location
 from .iss import ISSClient, ISSPass, ISSPosition
 from .meteors import (
     MeteorClient,
@@ -149,4 +150,8 @@ __all__ = [
     "DailyBriefingData",
     "SpaceWeatherSummary",
     "generate_briefing_text",
+    # Geocoding
+    "GeocodingClient",
+    "GeocodingResult",
+    "search_location",
 ]

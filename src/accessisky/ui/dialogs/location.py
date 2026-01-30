@@ -1,7 +1,8 @@
-"""Location settings dialog."""
+"""Location settings dialog with geocoding search."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -10,24 +11,12 @@ from typing import TYPE_CHECKING
 
 import wx
 
+from ...api.geocoding import GeocodingResult, search_location
+
 if TYPE_CHECKING:
     pass
 
 logger = logging.getLogger(__name__)
-
-# Common city presets for quick selection
-CITY_PRESETS = [
-    ("New York, USA", 40.7128, -74.0060),
-    ("Los Angeles, USA", 34.0522, -118.2437),
-    ("Chicago, USA", 41.8781, -87.6298),
-    ("London, UK", 51.5074, -0.1278),
-    ("Paris, France", 48.8566, 2.3522),
-    ("Berlin, Germany", 52.5200, 13.4050),
-    ("Tokyo, Japan", 35.6762, 139.6503),
-    ("Sydney, Australia", -33.8688, 151.2093),
-    ("Toronto, Canada", 43.6532, -79.3832),
-    ("Minneapolis, USA", 44.9778, -93.2650),
-]
 
 
 @dataclass
@@ -103,25 +92,27 @@ def save_location(location: Location) -> bool:
 
 
 class LocationDialog(wx.Dialog):
-    """Dialog for setting user location."""
+    """Dialog for setting user location with search."""
 
     def __init__(self, parent: wx.Window | None, current_location: Location | None = None):
         """Initialize the location dialog."""
         super().__init__(
             parent,
             title="Set Location",
-            size=(450, 350),
+            size=(500, 400),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
         )
 
         self.location: Location | None = current_location
+        self.search_results: list[GeocodingResult] = []
         self._create_ui()
         self._bind_events()
 
         if current_location:
-            self._populate_from_location(current_location)
+            self._show_current_location(current_location)
 
         self.Centre()
+        self.search_input.SetFocus()
 
     def _create_ui(self) -> None:
         """Create the dialog UI."""
@@ -131,78 +122,45 @@ class LocationDialog(wx.Dialog):
         # Instructions
         instructions = wx.StaticText(
             panel,
-            label="Enter your location coordinates or select a city preset.\n"
-            "This is used to calculate sunrise/sunset times, ISS passes, etc.",
+            label="Search for a city or location. Select from results below.",
         )
-        instructions.SetName("Location dialog instructions")
-        main_sizer.Add(instructions, 0, wx.ALL | wx.EXPAND, 10)
+        instructions.SetName("Location search instructions")
+        main_sizer.Add(instructions, 0, wx.ALL, 10)
 
-        # City preset dropdown
-        preset_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        preset_label = wx.StaticText(panel, label="City &Preset:")
-        self.preset_choice = wx.Choice(
-            panel,
-            choices=["Custom"] + [name for name, _, _ in CITY_PRESETS],
-        )
-        self.preset_choice.SetSelection(0)
-        self.preset_choice.SetName("City preset selector")
+        # Search box
+        search_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        search_label = wx.StaticText(panel, label="&Search:")
+        self.search_input = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER)
+        self.search_input.SetName("Enter city or location name")
+        self.search_btn = wx.Button(panel, label="&Find")
 
-        preset_sizer.Add(preset_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        preset_sizer.Add(self.preset_choice, 1, wx.EXPAND)
-        main_sizer.Add(preset_sizer, 0, wx.ALL | wx.EXPAND, 10)
+        search_sizer.Add(search_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
+        search_sizer.Add(self.search_input, 1, wx.EXPAND | wx.RIGHT, 5)
+        search_sizer.Add(self.search_btn, 0)
+        main_sizer.Add(search_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
-        # Latitude input
-        lat_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lat_label = wx.StaticText(panel, label="&Latitude:")
-        lat_label.SetMinSize((80, -1))
-        self.lat_input = wx.TextCtrl(panel, value="0.0")
-        self.lat_input.SetName("Latitude in degrees, negative for south")
-        lat_hint = wx.StaticText(panel, label="(-90 to 90)")
-        lat_hint.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        main_sizer.AddSpacer(10)
 
-        lat_sizer.Add(lat_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        lat_sizer.Add(self.lat_input, 1, wx.EXPAND | wx.RIGHT, 5)
-        lat_sizer.Add(lat_hint, 0, wx.ALIGN_CENTER_VERTICAL)
-        main_sizer.Add(lat_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+        # Results list
+        results_label = wx.StaticText(panel, label="&Results:")
+        main_sizer.Add(results_label, 0, wx.LEFT | wx.RIGHT, 10)
 
-        main_sizer.AddSpacer(5)
+        self.results_list = wx.ListBox(panel)
+        self.results_list.SetName("Search results, select a location")
+        main_sizer.Add(self.results_list, 1, wx.ALL | wx.EXPAND, 10)
 
-        # Longitude input
-        lon_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lon_label = wx.StaticText(panel, label="L&ongitude:")
-        lon_label.SetMinSize((80, -1))
-        self.lon_input = wx.TextCtrl(panel, value="0.0")
-        self.lon_input.SetName("Longitude in degrees, negative for west")
-        lon_hint = wx.StaticText(panel, label="(-180 to 180)")
-        lon_hint.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        # Current selection display
+        self.selection_text = wx.StaticText(panel, label="No location selected")
+        self.selection_text.SetName("Currently selected location")
+        main_sizer.Add(self.selection_text, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
-        lon_sizer.Add(lon_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        lon_sizer.Add(self.lon_input, 1, wx.EXPAND | wx.RIGHT, 5)
-        lon_sizer.Add(lon_hint, 0, wx.ALIGN_CENTER_VERTICAL)
-        main_sizer.Add(lon_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-
-        main_sizer.AddSpacer(5)
-
-        # Location name (optional)
-        name_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        name_label = wx.StaticText(panel, label="&Name:")
-        name_label.SetMinSize((80, -1))
-        self.name_input = wx.TextCtrl(panel, value="")
-        self.name_input.SetName("Location name, optional")
-        name_hint = wx.StaticText(panel, label="(optional)")
-        name_hint.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
-
-        name_sizer.Add(name_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
-        name_sizer.Add(self.name_input, 1, wx.EXPAND | wx.RIGHT, 5)
-        name_sizer.Add(name_hint, 0, wx.ALIGN_CENTER_VERTICAL)
-        main_sizer.Add(name_sizer, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
-
-        main_sizer.AddStretchSpacer()
+        main_sizer.AddSpacer(10)
 
         # Buttons
         btn_sizer = wx.StdDialogButtonSizer()
         self.ok_btn = wx.Button(panel, wx.ID_OK, "&Save")
         self.ok_btn.SetDefault()
+        self.ok_btn.Enable(False)  # Disabled until location selected
         cancel_btn = wx.Button(panel, wx.ID_CANCEL, "&Cancel")
 
         btn_sizer.AddButton(self.ok_btn)
@@ -214,73 +172,83 @@ class LocationDialog(wx.Dialog):
 
     def _bind_events(self) -> None:
         """Bind event handlers."""
-        self.preset_choice.Bind(wx.EVT_CHOICE, self._on_preset_selected)
+        self.search_btn.Bind(wx.EVT_BUTTON, self._on_search)
+        self.search_input.Bind(wx.EVT_TEXT_ENTER, self._on_search)
+        self.results_list.Bind(wx.EVT_LISTBOX, self._on_result_selected)
+        self.results_list.Bind(wx.EVT_LISTBOX_DCLICK, self._on_result_double_click)
         self.ok_btn.Bind(wx.EVT_BUTTON, self._on_ok)
 
-    def _on_preset_selected(self, event: wx.CommandEvent) -> None:
-        """Handle city preset selection."""
-        selection = self.preset_choice.GetSelection()
-        if selection > 0:  # Not "Custom"
-            name, lat, lon = CITY_PRESETS[selection - 1]
-            self.lat_input.SetValue(str(lat))
-            self.lon_input.SetValue(str(lon))
-            self.name_input.SetValue(name)
+    def _show_current_location(self, loc: Location) -> None:
+        """Show the current location."""
+        self.selection_text.SetLabel(f"Current: {loc}")
+        self.ok_btn.Enable(True)
 
-    def _populate_from_location(self, loc: Location) -> None:
-        """Populate fields from existing location."""
-        self.lat_input.SetValue(str(loc.latitude))
-        self.lon_input.SetValue(str(loc.longitude))
-        self.name_input.SetValue(loc.name)
+    def _on_search(self, event: wx.CommandEvent) -> None:
+        """Handle search request."""
+        query = self.search_input.GetValue().strip()
+        if not query:
+            return
 
-        # Try to match a preset
-        for i, (_name, lat, lon) in enumerate(CITY_PRESETS):
-            if abs(lat - loc.latitude) < 0.01 and abs(lon - loc.longitude) < 0.01:
-                self.preset_choice.SetSelection(i + 1)
-                break
+        self.search_btn.Enable(False)
+        self.search_btn.SetLabel("Searching...")
+        self.results_list.Clear()
+
+        # Run async search
+        try:
+            loop = asyncio.new_event_loop()
+            results = loop.run_until_complete(search_location(query))
+            loop.close()
+
+            self.search_results = results
+
+            if results:
+                for result in results:
+                    self.results_list.Append(result.display_name)
+                self.results_list.SetSelection(0)
+                self._on_result_selected(None)
+            else:
+                self.results_list.Append("No results found")
+                self.search_results = []
+
+        except Exception as e:
+            logger.error(f"Search failed: {e}")
+            self.results_list.Append(f"Search failed: {e}")
+            self.search_results = []
+
+        finally:
+            self.search_btn.Enable(True)
+            self.search_btn.SetLabel("&Find")
+
+    def _on_result_selected(self, event: wx.CommandEvent | None) -> None:
+        """Handle result selection."""
+        selection = self.results_list.GetSelection()
+        if selection == wx.NOT_FOUND or selection >= len(self.search_results):
+            return
+
+        result = self.search_results[selection]
+        self.location = Location(
+            latitude=result.latitude,
+            longitude=result.longitude,
+            name=result.display_name,
+        )
+        self.selection_text.SetLabel(
+            f"Selected: {result.display_name}\n"
+            f"Coordinates: {result.latitude:.4f}, {result.longitude:.4f}"
+        )
+        self.ok_btn.Enable(True)
+
+    def _on_result_double_click(self, event: wx.CommandEvent) -> None:
+        """Handle double-click on result - select and close."""
+        self._on_result_selected(event)
+        if self.location:
+            self._on_ok(event)
 
     def _on_ok(self, event: wx.CommandEvent) -> None:
         """Handle OK button click."""
-        try:
-            lat = float(self.lat_input.GetValue())
-            lon = float(self.lon_input.GetValue())
-        except ValueError:
-            wx.MessageBox(
-                "Please enter valid numbers for latitude and longitude.",
-                "Invalid Input",
-                wx.OK | wx.ICON_ERROR,
-            )
-            return
-
-        # Validate ranges
-        if not -90 <= lat <= 90:
-            wx.MessageBox(
-                "Latitude must be between -90 and 90 degrees.",
-                "Invalid Latitude",
-                wx.OK | wx.ICON_ERROR,
-            )
-            self.lat_input.SetFocus()
-            return
-
-        if not -180 <= lon <= 180:
-            wx.MessageBox(
-                "Longitude must be between -180 and 180 degrees.",
-                "Invalid Longitude",
-                wx.OK | wx.ICON_ERROR,
-            )
-            self.lon_input.SetFocus()
-            return
-
-        self.location = Location(
-            latitude=lat,
-            longitude=lon,
-            name=self.name_input.GetValue().strip(),
-        )
-
-        # Save to config
-        save_location(self.location)
-
-        self.EndModal(wx.ID_OK)
+        if self.location:
+            save_location(self.location)
+            self.EndModal(wx.ID_OK)
 
     def get_location(self) -> Location | None:
-        """Get the entered location."""
+        """Get the selected location."""
         return self.location

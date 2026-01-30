@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Location Search**: Search for cities by name using Open-Meteo geocoding API
+  - No more manual lat/lon entry required
+  - Search returns up to 10 results with city, state/province, and country
+  - Select from results to set your location
 - **Tonight's Summary**: Plain-language overview of tonight's sky conditions
   - Aggregates moon phase, ISS passes, visible planets, meteor showers, aurora activity, and viewing conditions
   - Natural language summary designed for screen readers
