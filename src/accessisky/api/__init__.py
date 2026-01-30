@@ -1,6 +1,15 @@
 """API clients for AccessiSky."""
 
 from .aurora import AuroraClient, AuroraForecast, GeomagActivity, KpIndex, SolarWind
+from .darksky import (
+    DarkSkyClient,
+    DarkSkyWindow,
+    TwilightType,
+    get_dark_sky_window,
+    get_darkness_duration,
+    get_twilight_type,
+    is_astronomical_darkness,
+)
 from .eclipses import (
     Eclipse,
     EclipseClient,
@@ -55,6 +64,14 @@ __all__ = [
     "ISSClient",
     "ISSPosition",
     "ISSPass",
+    # Dark Sky
+    "DarkSkyClient",
+    "DarkSkyWindow",
+    "TwilightType",
+    "get_dark_sky_window",
+    "get_darkness_duration",
+    "get_twilight_type",
+    "is_astronomical_darkness",
     # Eclipses
     "Eclipse",
     "EclipseClient",
