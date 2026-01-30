@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "accessisky"
+version = "0.1.0"
+description = "Accessible sky tracking app - ISS passes, satellites, moon phases, and astronomy"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Josh (Orinks)", email = "orinks@users.noreply.github.com" },
+]
+keywords = ["astronomy", "accessibility", "iss", "satellites", "screen-reader"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+
+dependencies = [
+    "wxPython>=4.2.0",
+    "httpx>=0.27.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.4.0",
+    "respx>=0.21.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Orinks/AccessiSky"
+Repository = "https://github.com/Orinks/AccessiSky"
+Issues = "https://github.com/Orinks/AccessiSky/issues"
+
+[project.gui-scripts]
+accessisky = "accessisky.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/accessisky"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["src/accessisky"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
