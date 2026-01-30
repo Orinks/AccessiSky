@@ -1,5 +1,6 @@
 # AccessiSky
 
+[![CI](https://github.com/Orinks/AccessiSky/actions/workflows/ci.yml/badge.svg)](https://github.com/Orinks/AccessiSky/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 [![Built with wxPython](https://img.shields.io/badge/Built%20with-wxPython-blue)](https://wxpython.org/)
@@ -9,12 +10,12 @@ AccessiSky is an accessible sky tracking application built with Python and wxPyt
 ## Features
 
 - **ISS Tracking**: Know when the International Space Station passes over your location
-- **Satellite Passes**: Track visible satellite passes in your area
-- **Moon Phases**: Current phase, next full moon, next new moon
-- **Sun Data**: Sunrise, sunset, twilight times
-- **Meteor Showers**: Upcoming meteor shower predictions
-- **Aurora Forecast**: Geomagnetic activity and aurora visibility
-- **Accessibility First**: Full screen reader support, keyboard navigation, ARIA labels
+- **Moon Phases**: Current phase, illumination percentage, upcoming lunar events
+- **Sun Data**: Sunrise, sunset, twilight times (civil, nautical, astronomical)
+- **Aurora Forecast**: Kp index, geomagnetic activity, aurora visibility predictions
+- **Space Weather**: Solar wind speed and density from NOAA SWPC
+- **Location Settings**: Save your coordinates for accurate calculations
+- **Accessibility First**: Full screen reader support, keyboard navigation, proper labels
 
 ## Installation
 
@@ -36,13 +37,12 @@ python -m accessisky
 
 ## Data Sources
 
-AccessiSky uses free, open APIs:
+AccessiSky uses free, open APIs that require no API keys:
 
-- **Open Notify** - ISS current position and pass predictions
-- **CelesTrak** - Satellite TLE data
-- **Sunrise-Sunset.org** - Sun times
-- **Open-Meteo** - Weather conditions for visibility
-- **SWPC/NOAA** - Space weather and aurora forecasts
+- **[Open Notify](http://open-notify.org/)** - ISS current position
+- **[Sunrise-Sunset.org](https://sunrise-sunset.org/api)** - Sun times and twilight
+- **[NOAA SWPC](https://www.swpc.noaa.gov/)** - Space weather, Kp index, aurora forecasts
+- **Moon phases** - Calculated locally using astronomical algorithms
 
 ## Development
 

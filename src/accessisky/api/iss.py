@@ -61,8 +61,24 @@ class ISSPass:
 
 def _azimuth_to_direction(azimuth: float) -> str:
     """Convert azimuth degrees to compass direction."""
-    directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", 
-                  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+    directions = [
+        "N",
+        "NNE",
+        "NE",
+        "ENE",
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
+    ]
     index = round(azimuth / 22.5) % 16
     return directions[index]
 
@@ -91,24 +107,24 @@ class ISSClient:
     async def get_current_position(self) -> ISSPosition | None:
         """
         Get the current ISS position.
-        
+
         Uses Open Notify API (free, no key required).
-        
+
         Returns:
             ISSPosition or None if request fails
         """
         try:
             data = await self._fetch_json(OPEN_NOTIFY_URL)
-            
+
             lat = float(data["iss_position"]["latitude"])
             lon = float(data["iss_position"]["longitude"])
             timestamp = datetime.fromtimestamp(data["timestamp"], tz=timezone.utc)
-            
+
             return ISSPosition(
                 latitude=lat,
                 longitude=lon,
                 altitude=408.0,  # Average ISS altitude
-                velocity=7.66,   # Average ISS velocity km/s
+                velocity=7.66,  # Average ISS velocity km/s
                 timestamp=timestamp,
             )
         except Exception as e:
@@ -124,17 +140,17 @@ class ISSClient:
     ) -> list[ISSPass]:
         """
         Get upcoming ISS pass predictions for a location.
-        
+
         Note: This uses a simplified calculation. For production,
         consider using N2YO API (requires free API key) or
         computing passes from TLE data.
-        
+
         Args:
             latitude: Observer latitude
             longitude: Observer longitude
             days: Number of days to predict
             min_elevation: Minimum elevation to include
-            
+
         Returns:
             List of ISSPass predictions
         """
@@ -144,28 +160,30 @@ class ISSClient:
             data = await self._fetch_json(
                 f"https://api.n2yo.com/rest/v1/satellite/visualpasses/25544/{latitude}/{longitude}/0/{days}/{min_elevation}"
             )
-            
+
             passes = []
             for pass_data in data.get("passes", []):
                 rise = pass_data.get("rise", {})
                 culm = pass_data.get("culmination", {})
                 set_data = pass_data.get("set", {})
-                
+
                 rise_time = datetime.fromisoformat(rise.get("utc_datetime", ""))
                 culm_time = datetime.fromisoformat(culm.get("utc_datetime", ""))
                 set_time = datetime.fromisoformat(set_data.get("utc_datetime", ""))
-                
-                passes.append(ISSPass(
-                    rise_time=rise_time,
-                    culmination_time=culm_time,
-                    set_time=set_time,
-                    duration_seconds=int((set_time - rise_time).total_seconds()),
-                    max_elevation=culm.get("elevation", 0),
-                    rise_azimuth=_azimuth_to_direction(rise.get("azimuth", 0)),
-                    set_azimuth=_azimuth_to_direction(set_data.get("azimuth", 0)),
-                    is_visible=pass_data.get("visible", False),
-                ))
-            
+
+                passes.append(
+                    ISSPass(
+                        rise_time=rise_time,
+                        culmination_time=culm_time,
+                        set_time=set_time,
+                        duration_seconds=int((set_time - rise_time).total_seconds()),
+                        max_elevation=culm.get("elevation", 0),
+                        rise_azimuth=_azimuth_to_direction(rise.get("azimuth", 0)),
+                        set_azimuth=_azimuth_to_direction(set_data.get("azimuth", 0)),
+                        is_visible=pass_data.get("visible", False),
+                    )
+                )
+
             return passes
         except Exception as e:
             logger.error(f"Failed to get ISS passes: {e}")

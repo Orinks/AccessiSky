@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from accessisky.api.iss import ISSClient, ISSPosition, ISSPass
+from accessisky.api.iss import ISSClient, ISSPass, ISSPosition
 
 
 class TestISSPosition:
