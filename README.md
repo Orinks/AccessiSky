@@ -1,11 +1,13 @@
 # AccessiSky
 
+**Stay connected to what's above.**
+
 [![CI](https://github.com/Orinks/AccessiSky/actions/workflows/ci.yml/badge.svg)](https://github.com/Orinks/AccessiSky/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 [![Built with wxPython](https://img.shields.io/badge/Built%20with-wxPython-blue)](https://wxpython.org/)
 
-AccessiSky is an accessible sky tracking application built with Python and wxPython. Track ISS passes, satellite visibility, moon phases, and more with full screen reader support.
+AccessiSky helps you stay aware of celestial events — whether or not you can see them. Built with full screen reader support, it brings ISS passes, moon phases, meteor showers, and more to everyone.
 
 ## Features
 
