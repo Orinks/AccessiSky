@@ -1,10 +1,18 @@
 """Tests for geocoding API client."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from accessisky.api.geocoding import GeocodingClient, GeocodingResult, search_location
+
+
+def create_mock_response(json_data):
+    """Create a mock httpx response."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = json_data
+    mock_response.raise_for_status = MagicMock()
+    return mock_response
 
 
 class TestGeocodingResult:
@@ -70,7 +78,7 @@ class TestGeocodingClient:
     @pytest.mark.asyncio
     async def test_search_returns_results(self, client):
         """Test search returns parsed results."""
-        mock_response = {
+        mock_response_data = {
             "results": [
                 {
                     "name": "New York",
@@ -84,9 +92,12 @@ class TestGeocodingClient:
             ]
         }
 
-        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-            mock_get.return_value.json.return_value = mock_response
-            mock_get.return_value.raise_for_status = lambda: None
+        mock_client = AsyncMock()
+        mock_client.get.return_value = create_mock_response(mock_response_data)
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
 
             results = await client.search("New York")
 
@@ -106,11 +117,14 @@ class TestGeocodingClient:
     @pytest.mark.asyncio
     async def test_search_handles_no_results(self, client):
         """Test handling when API returns no results."""
-        mock_response = {"results": []}
+        mock_response_data = {"results": []}
 
-        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-            mock_get.return_value.json.return_value = mock_response
-            mock_get.return_value.raise_for_status = lambda: None
+        mock_client = AsyncMock()
+        mock_client.get.return_value = create_mock_response(mock_response_data)
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
 
             results = await client.search("xyznonexistent123")
             assert results == []
@@ -120,8 +134,12 @@ class TestGeocodingClient:
         """Test graceful handling of timeout."""
         import httpx
 
-        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-            mock_get.side_effect = httpx.TimeoutException("timeout")
+        mock_client = AsyncMock()
+        mock_client.get.side_effect = httpx.TimeoutException("timeout")
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
 
             results = await client.search("New York")
             assert results == []
@@ -131,8 +149,14 @@ class TestGeocodingClient:
         """Test graceful handling of HTTP errors."""
         import httpx
 
-        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-            mock_get.side_effect = httpx.HTTPStatusError("error", request=None, response=None)
+        mock_client = AsyncMock()
+        mock_client.get.side_effect = httpx.HTTPStatusError(
+            "error", request=MagicMock(), response=MagicMock()
+        )
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
 
             results = await client.search("New York")
             assert results == []
@@ -144,7 +168,7 @@ class TestSearchLocationFunction:
     @pytest.mark.asyncio
     async def test_search_location_function(self):
         """Test the convenience function works."""
-        mock_response = {
+        mock_response_data = {
             "results": [
                 {
                     "name": "London",
@@ -155,9 +179,12 @@ class TestSearchLocationFunction:
             ]
         }
 
-        with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
-            mock_get.return_value.json.return_value = mock_response
-            mock_get.return_value.raise_for_status = lambda: None
+        mock_client = AsyncMock()
+        mock_client.get.return_value = create_mock_response(mock_response_data)
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
 
             results = await search_location("London")
 
