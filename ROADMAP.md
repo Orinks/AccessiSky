@@ -4,18 +4,22 @@ A focused roadmap for AccessiSky - the accessible sky tracking companion to Acce
 
 ## Vision
 
-AccessiSky helps users know **what's happening in the sky** and **when to look up**. The app answers:
-- "Can I see the ISS tonight?"
-- "When is the next meteor shower?"
-- "Is tonight good for stargazing?"
-- "What planets are visible?"
+AccessiSky helps users stay connected to **what's happening above** — whether or not they can see it. Built primarily for blind and visually impaired users, but useful for everyone.
+
+The app answers:
+- "When is the ISS passing over?" (a shared experience, even without sight)
+- "What phase is the moon in?" (affects tides, wildlife, cultural events)
+- "When does it get dark tonight?" (practical daily planning)
+- "Is there a meteor shower happening?" (events to know about and share)
+- "Any space weather activity?" (aurora, solar storms)
 
 ## Core Principles
 
-1. **Accessibility First** - Every feature must work with screen readers
-2. **API Over Calculation** - Use free APIs instead of local math where possible
-3. **Actionable Information** - Tell users *when* to go outside and *what* to look for
-4. **Keep It Simple** - Focused feature set, not an astronomy encyclopedia
+1. **Built for Screen Readers** - Every feature must be fully accessible
+2. **Information, Not Just Visuals** - Focus on knowledge and awareness, not just "what to look at"
+3. **API Over Calculation** - Use free APIs instead of local math where possible
+4. **Practical & Social** - Help users plan their day and connect over shared celestial events
+5. **Keep It Simple** - Focused feature set, not an astronomy encyclopedia
 
 ---
 
@@ -33,30 +37,30 @@ AccessiSky helps users know **what's happening in the sky** and **when to look u
 
 ---
 
-## Phase 2: Stargazing Companion (Current)
+## Phase 2: Sky Awareness (Current)
 
-**Goal:** Help users plan stargazing sessions
+**Goal:** Keep users informed about celestial events and conditions
 
-- [x] Meteor shower calendar
-- [x] Planet visibility
-- [x] Eclipse calendar (2025-2030)
-- [x] Dark sky times (astronomical twilight)
-- [x] Viewing conditions score
-- [ ] **Weather integration** - Cloud cover from Open-Meteo
-- [ ] **Tonight's highlights** - Summary of what's visible tonight
-- [ ] **Best viewing time** - Optimal window considering all factors
+- [x] Meteor shower calendar - Know when major showers are active
+- [x] Planet positions - Which planets are in the sky
+- [x] Eclipse calendar (2025-2030) - Upcoming eclipses worldwide
+- [x] Dark sky times - When true night begins/ends
+- [x] Conditions summary - Weather and moon factors
+- [ ] **Weather integration** - Cloud cover and conditions from Open-Meteo
+- [ ] **Tonight's summary** - Plain-language summary of sky events tonight
+- [ ] **Daily briefing** - What's happening in the sky today
 
 ---
 
 ## Phase 3: Notifications & Alerts
 
-**Goal:** Proactive alerts so users don't miss events
+**Goal:** Proactive alerts so users stay informed about events
 
-- [ ] ISS pass notifications (X minutes before visible pass)
-- [ ] Meteor shower peak alerts
-- [ ] Aurora activity alerts (Kp index threshold)
-- [ ] Eclipse reminders
-- [ ] "Clear skies tonight" alerts when conditions are good
+- [ ] ISS pass notifications (X minutes before pass overhead)
+- [ ] Meteor shower peak alerts (major showers like Perseids)
+- [ ] Aurora activity alerts (high Kp index)
+- [ ] Eclipse reminders (days before, then day-of)
+- [ ] Space weather alerts (solar flares, geomagnetic storms)
 - [ ] Customizable notification preferences
 
 ---
