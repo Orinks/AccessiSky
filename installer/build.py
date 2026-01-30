@@ -90,7 +90,7 @@ def install_dependencies() -> None:
     try:
         import PyInstaller
 
-        print(f"✓ PyInstaller {PyInstaller.__version__} found")
+        print(f"[OK] PyInstaller {PyInstaller.__version__} found")
     except ImportError:
         print("Installing PyInstaller...")
         run_command([sys.executable, "-m", "pip", "install", "pyinstaller"])
@@ -126,10 +126,10 @@ def build_pyinstaller() -> bool:
 
     try:
         run_command(cmd, cwd=ROOT)
-        print("\n✓ PyInstaller build completed")
+        print("\n[OK] PyInstaller build completed")
         return True
     except Exception as e:
-        print(f"\n✗ PyInstaller build failed: {e}")
+        print(f"\n[FAIL] PyInstaller build failed: {e}")
         return False
 
 
@@ -183,7 +183,7 @@ def create_macos_dmg() -> bool:
             cmd.extend([str(dmg_path), str(DIST_DIR)])
 
             run_command(cmd, cwd=ROOT)
-            print(f"\n✓ DMG created: {dmg_path}")
+            print(f"\n[OK] DMG created: {dmg_path}")
             return True
         except Exception as e:
             print(f"create-dmg failed: {e}, falling back to hdiutil")
@@ -221,10 +221,10 @@ def create_macos_dmg() -> bool:
         # Cleanup
         shutil.rmtree(dmg_temp)
 
-        print(f"\n✓ DMG created: {dmg_path}")
+        print(f"\n[OK] DMG created: {dmg_path}")
         return True
     except Exception as e:
-        print(f"\n✗ DMG creation failed: {e}")
+        print(f"\n[FAIL] DMG creation failed: {e}")
         return False
 
 
@@ -273,7 +273,7 @@ def create_portable_zip() -> bool:
     # Create zip
     shutil.make_archive(str(zip_path), "zip", source_dir.parent, source_dir.name)
 
-    print(f"\n✓ Portable ZIP created: {zip_path}.zip")
+    print(f"\n[OK] Portable ZIP created: {zip_path}.zip")
     return True
 
 
@@ -298,7 +298,7 @@ def clean_build() -> None:
         if "site-packages" not in str(pyc):
             pyc.unlink(missing_ok=True)
 
-    print("✓ Clean complete")
+    print("[OK] Clean complete")
 
 
 def run_dev() -> int:
@@ -383,7 +383,7 @@ def main() -> int:
                 size_mb = f.stat().st_size / (1024 * 1024)
                 print(f"  {f.name} ({size_mb:.1f} MB)")
 
-    print("\n✓ Build complete!")
+    print("\n[OK] Build complete!")
     return 0
 
 
