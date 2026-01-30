@@ -283,6 +283,7 @@ class ViewingClient:
         """Lazy-load weather client."""
         if self._weather_client is None:
             from .weather import WeatherClient
+
             self._weather_client = WeatherClient(timeout=self.timeout)
         return self._weather_client
 
@@ -290,6 +291,7 @@ class ViewingClient:
         """Lazy-load moon client."""
         if self._moon_client is None:
             from .moon import MoonClient
+
             self._moon_client = MoonClient(timeout=self.timeout)
         return self._moon_client
 

@@ -365,13 +365,19 @@ class MoonClient:
                         illumination = float(fracillum_str.replace("%", "")) / 100.0
                     except (ValueError, AttributeError):
                         illumination = get_moon_illumination(
-                            datetime.combine(target_date, datetime.min.time().replace(hour=12), tzinfo=timezone.utc)
+                            datetime.combine(
+                                target_date,
+                                datetime.min.time().replace(hour=12),
+                                tzinfo=timezone.utc,
+                            )
                         )
 
                     phase = _parse_usno_curphase(curphase)
 
                     # Estimate age from phase and illumination
-                    dt = datetime.combine(target_date, datetime.min.time().replace(hour=12), tzinfo=timezone.utc)
+                    dt = datetime.combine(
+                        target_date, datetime.min.time().replace(hour=12), tzinfo=timezone.utc
+                    )
 
                     return MoonInfo(
                         date=target_date,

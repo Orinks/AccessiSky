@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
 import httpx
 
@@ -106,10 +106,7 @@ class WeatherForecast:
         if target_date is None:
             target_date = date.today()
 
-        return [
-            h for h in self.hourly
-            if h.is_day is False and h.time.date() == target_date
-        ]
+        return [h for h in self.hourly if h.is_day is False and h.time.date() == target_date]
 
     def get_best_hour_for_stargazing(
         self,
@@ -228,9 +225,15 @@ class WeatherClient:
                     HourlyWeather(
                         time=dt,
                         cloud_cover_percent=cloud_cover[i] if i < len(cloud_cover) else 0,
-                        cloud_cover_low_percent=cloud_cover_low[i] if i < len(cloud_cover_low) else None,
-                        cloud_cover_mid_percent=cloud_cover_mid[i] if i < len(cloud_cover_mid) else None,
-                        cloud_cover_high_percent=cloud_cover_high[i] if i < len(cloud_cover_high) else None,
+                        cloud_cover_low_percent=cloud_cover_low[i]
+                        if i < len(cloud_cover_low)
+                        else None,
+                        cloud_cover_mid_percent=cloud_cover_mid[i]
+                        if i < len(cloud_cover_mid)
+                        else None,
+                        cloud_cover_high_percent=cloud_cover_high[i]
+                        if i < len(cloud_cover_high)
+                        else None,
                         visibility_meters=visibility[i] if i < len(visibility) else None,
                         temperature_celsius=temperature[i] if i < len(temperature) else None,
                         humidity_percent=humidity[i] if i < len(humidity) else None,

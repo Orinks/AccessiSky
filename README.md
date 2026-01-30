@@ -98,3 +98,21 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Related Projects
 
 - [AccessiWeather](https://github.com/Orinks/AccessiWeather) - Accessible weather app (companion project)
+
+## Development Setup
+
+```bash
+# Clone and install
+git clone https://github.com/Orinks/AccessiSky.git
+cd AccessiSky
+pip install -e .[dev]
+
+# Enable pre-push lint hook
+git config core.hooksPath .githooks
+
+# Or use pre-commit (alternative)
+pip install pre-commit
+pre-commit install
+```
+
+The pre-push hook runs `ruff check` before every push to catch lint errors early.

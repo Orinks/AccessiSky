@@ -1,7 +1,5 @@
 """Tests for Viewing Conditions score calculation."""
 
-
-
 from accessisky.api.viewing import (
     CloudCover,
     ViewingConditions,

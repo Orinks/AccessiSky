@@ -245,12 +245,15 @@ class TestMoonClient:
         assert len(events) > 0
         # Check that we got primary phases
         phases = {e.phase for e in events}
-        assert any(p in phases for p in [
-            MoonPhase.FULL_MOON,
-            MoonPhase.NEW_MOON,
-            MoonPhase.FIRST_QUARTER,
-            MoonPhase.LAST_QUARTER,
-        ])
+        assert any(
+            p in phases
+            for p in [
+                MoonPhase.FULL_MOON,
+                MoonPhase.NEW_MOON,
+                MoonPhase.FIRST_QUARTER,
+                MoonPhase.LAST_QUARTER,
+            ]
+        )
 
     @pytest.mark.asyncio
     async def test_close(self, client):

@@ -1,0 +1,27 @@
+#!/bin/bash
+# Pre-push hook to run linting before pushing
+# Install: git config core.hooksPath .githooks
+
+echo "Running ruff check before push..."
+
+# Try ruff directly, or via pipx
+if command -v ruff &> /dev/null; then
+    ruff check src tests
+    RESULT=$?
+elif command -v pipx &> /dev/null; then
+    pipx run ruff check src tests
+    RESULT=$?
+else
+    echo "Warning: ruff not found, skipping lint check"
+    exit 0
+fi
+
+if [ $RESULT -ne 0 ]; then
+    echo ""
+    echo "❌ Lint check failed! Fix errors before pushing."
+    echo "   Run: ruff check src tests --fix"
+    exit 1
+fi
+
+echo "✓ Lint check passed"
+exit 0
