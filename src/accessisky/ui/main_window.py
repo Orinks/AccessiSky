@@ -314,6 +314,30 @@ class MainWindow(wx.Frame):
         refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_moon)
         sizer.Add(refresh_btn, 0, wx.ALL, 5)
 
+        # Help section
+        help_label = wx.StaticText(panel, label="Understanding Moon Phases")
+        help_label.SetName("Section: Help - Understanding Moon Phases")
+        help_label.SetFont(help_label.GetFont().Bold())
+        sizer.Add(help_label, 0, wx.ALL, 5)
+
+        help_text = (
+            "Illumination: Percentage of the Moon's visible surface lit by the Sun. "
+            "0% is New Moon, 100% is Full Moon.\n\n"
+            "Moon Age: Days since the last New Moon. The lunar cycle is about 29.5 days.\n\n"
+            "Phases: New Moon (dark), Waxing Crescent, First Quarter (half lit, right side), "
+            "Waxing Gibbous, Full Moon (fully lit), Waning Gibbous, Third Quarter (half lit, left side), "
+            "Waning Crescent, then back to New Moon.\n\n"
+            "For stargazing: Less moonlight is better. New Moon and crescent phases offer darker skies."
+        )
+        help_ctrl = wx.TextCtrl(
+            panel,
+            value=help_text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_BESTWRAP,
+            size=(-1, 100),
+        )
+        help_ctrl.SetName("Help text explaining moon phase terminology")
+        sizer.Add(help_ctrl, 0, wx.ALL | wx.EXPAND, 5)
+
         panel.SetSizer(sizer)
         return panel
 
@@ -357,6 +381,28 @@ class MainWindow(wx.Frame):
         refresh_btn.SetName("Refresh sun times")
         refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_sun)
         sizer.Add(refresh_btn, 0, wx.ALL, 5)
+
+        # Help section
+        help_label = wx.StaticText(panel, label="Understanding Twilight")
+        help_label.SetName("Section: Help - Understanding Twilight")
+        help_label.SetFont(help_label.GetFont().Bold())
+        sizer.Add(help_label, 0, wx.ALL, 5)
+
+        help_text = (
+            "Civil Twilight: Sun 0-6° below horizon. Enough light for outdoor activities without artificial light.\n\n"
+            "Nautical Twilight: Sun 6-12° below horizon. Horizon still visible at sea. Some stars visible.\n\n"
+            "Astronomical Twilight: Sun 12-18° below horizon. Sky dark enough for most astronomical observations.\n\n"
+            "Golden Hour: Shortly after sunrise and before sunset. Warm, soft light ideal for photography.\n\n"
+            "Solar Noon: When the Sun reaches its highest point in the sky (not always 12:00)."
+        )
+        help_ctrl = wx.TextCtrl(
+            panel,
+            value=help_text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_BESTWRAP,
+            size=(-1, 100),
+        )
+        help_ctrl.SetName("Help text explaining twilight and sun terminology")
+        sizer.Add(help_ctrl, 0, wx.ALL | wx.EXPAND, 5)
 
         panel.SetSizer(sizer)
         return panel
@@ -402,6 +448,31 @@ class MainWindow(wx.Frame):
         refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_aurora)
         sizer.Add(refresh_btn, 0, wx.ALL, 5)
 
+        # Help section
+        help_label = wx.StaticText(panel, label="Understanding Space Weather")
+        help_label.SetName("Section: Help - Understanding Space Weather")
+        help_label.SetFont(help_label.GetFont().Bold())
+        sizer.Add(help_label, 0, wx.ALL, 5)
+
+        help_text = (
+            "Kp Index: A 0-9 scale measuring geomagnetic disturbance. "
+            "0-2 is quiet, 3-4 is unsettled, 5+ indicates a geomagnetic storm. "
+            "Higher Kp means aurora visible at lower latitudes.\n\n"
+            "Solar Wind: A stream of charged particles from the Sun. "
+            "Normal speed is 300-400 km/s. Above 500 km/s is elevated and may enhance aurora.\n\n"
+            "Density: Particles per cubic centimeter. Higher density can intensify geomagnetic effects.\n\n"
+            "Aurora Visibility: The Kp level determines how far from the poles aurora can be seen. "
+            "Kp 5 reaches ~55° latitude, Kp 7 reaches ~50°, Kp 9 can reach ~40°."
+        )
+        help_ctrl = wx.TextCtrl(
+            panel,
+            value=help_text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_BESTWRAP,
+            size=(-1, 120),
+        )
+        help_ctrl.SetName("Help text explaining space weather terminology")
+        sizer.Add(help_ctrl, 0, wx.ALL | wx.EXPAND, 5)
+
         panel.SetSizer(sizer)
         return panel
 
@@ -440,6 +511,30 @@ class MainWindow(wx.Frame):
         refresh_btn.SetName("Refresh meteor shower information")
         refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_meteors)
         sizer.Add(refresh_btn, 0, wx.ALL, 5)
+
+        # Help section
+        help_label = wx.StaticText(panel, label="Understanding Meteor Showers")
+        help_label.SetName("Section: Help - Understanding Meteor Showers")
+        help_label.SetFont(help_label.GetFont().Bold())
+        sizer.Add(help_label, 0, wx.ALL, 5)
+
+        help_text = (
+            "ZHR (Zenithal Hourly Rate): Maximum meteors per hour under ideal conditions "
+            "(clear, dark sky with the radiant directly overhead). Actual rates are usually lower.\n\n"
+            "Peak Date: When the shower is most active. Activity often spans several days around the peak.\n\n"
+            "Radiant: The point in the sky where meteors appear to originate. "
+            "Showers are named after the constellation containing the radiant.\n\n"
+            "Best Viewing: After midnight, away from city lights, during a new moon. "
+            "No equipment needed — just your eyes and patience."
+        )
+        help_ctrl = wx.TextCtrl(
+            panel,
+            value=help_text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_BESTWRAP,
+            size=(-1, 100),
+        )
+        help_ctrl.SetName("Help text explaining meteor shower terminology")
+        sizer.Add(help_ctrl, 0, wx.ALL | wx.EXPAND, 5)
 
         panel.SetSizer(sizer)
         return panel
@@ -513,6 +608,31 @@ class MainWindow(wx.Frame):
         refresh_btn.SetName("Refresh eclipse calendar")
         refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_eclipses)
         sizer.Add(refresh_btn, 0, wx.ALL, 5)
+
+        # Help section
+        help_label = wx.StaticText(panel, label="Understanding Eclipses")
+        help_label.SetName("Section: Help - Understanding Eclipses")
+        help_label.SetFont(help_label.GetFont().Bold())
+        sizer.Add(help_label, 0, wx.ALL, 5)
+
+        help_text = (
+            "Solar Eclipse: Moon passes between Earth and Sun. Total (Sun fully covered), "
+            "Annular (ring of Sun visible), Partial (Sun partly covered). Never look directly at the Sun!\n\n"
+            "Lunar Eclipse: Earth passes between Sun and Moon. The Moon darkens or turns red. "
+            "Total (Moon fully in shadow), Partial, or Penumbral (subtle dimming).\n\n"
+            "Magnitude: How much of the Sun/Moon is covered. 1.0+ means total coverage.\n\n"
+            "Duration: How long totality lasts. Solar totality is brief (minutes); lunar can last over an hour.\n\n"
+            "Visibility: Eclipses are only visible from certain regions. Lunar eclipses are visible "
+            "from anywhere the Moon is above the horizon."
+        )
+        help_ctrl = wx.TextCtrl(
+            panel,
+            value=help_text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_BESTWRAP,
+            size=(-1, 120),
+        )
+        help_ctrl.SetName("Help text explaining eclipse terminology")
+        sizer.Add(help_ctrl, 0, wx.ALL | wx.EXPAND, 5)
 
         panel.SetSizer(sizer)
         return panel
