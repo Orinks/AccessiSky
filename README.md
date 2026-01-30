@@ -31,6 +31,12 @@ AccessiSky helps you stay aware of celestial events — whether or not you can s
 [uv](https://docs.astral.sh/uv/) handles everything automatically — no manual environment activation needed.
 
 ```bash
+# Install uv first (if you don't have it)
+# Windows (PowerShell):
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+# macOS/Linux:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Clone the repository
 git clone https://github.com/Orinks/AccessiSky.git
 cd AccessiSky
