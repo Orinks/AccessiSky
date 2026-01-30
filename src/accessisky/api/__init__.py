@@ -30,6 +30,15 @@ from .planets import (
     get_visible_planets,
 )
 from .sun import SunClient, SunTimes
+from .viewing import (
+    CloudCover,
+    ViewingClient,
+    ViewingConditions,
+    ViewingScore,
+    calculate_viewing_score,
+    get_moon_interference,
+    get_viewing_conditions,
+)
 
 __all__ = [
     # ISS
@@ -69,4 +78,12 @@ __all__ = [
     "KpIndex",
     "SolarWind",
     "GeomagActivity",
+    # Viewing Conditions
+    "CloudCover",
+    "ViewingClient",
+    "ViewingConditions",
+    "ViewingScore",
+    "calculate_viewing_score",
+    "get_moon_interference",
+    "get_viewing_conditions",
 ]
