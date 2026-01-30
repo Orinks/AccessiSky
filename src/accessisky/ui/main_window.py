@@ -11,9 +11,13 @@ import wx
 import wx.adv
 
 from ..api.aurora import AuroraClient
+from ..api.eclipses import EclipseClient, get_upcoming_eclipses
 from ..api.iss import ISSClient
+from ..api.meteors import MeteorClient, get_upcoming_showers, get_active_showers
 from ..api.moon import MoonClient
+from ..api.planets import PlanetClient, get_visible_planets
 from ..api.sun import SunClient
+from ..api.viewing import get_viewing_conditions
 from .dialogs.location import Location, LocationDialog, load_location
 
 if TYPE_CHECKING:
@@ -48,6 +52,9 @@ class MainWindow(wx.Frame):
         self.sun_client = SunClient()
         self.moon_client = MoonClient()
         self.aurora_client = AuroraClient()
+        self.meteor_client = MeteorClient()
+        self.planet_client = PlanetClient()
+        self.eclipse_client = EclipseClient()
 
         # Load saved location
         self.location: Location | None = load_location()
@@ -93,6 +100,16 @@ class MainWindow(wx.Frame):
         self.aurora_menu_item = view_menu.Append(
             wx.ID_ANY, "&Aurora Forecast\tF4", "View space weather and aurora"
         )
+        view_menu.AppendSeparator()
+        self.meteor_menu_item = view_menu.Append(
+            wx.ID_ANY, "&Meteor Showers\tF5", "View meteor shower calendar"
+        )
+        self.planets_menu_item = view_menu.Append(
+            wx.ID_ANY, "&Planets\tF6", "View visible planets"
+        )
+        self.eclipse_menu_item = view_menu.Append(
+            wx.ID_ANY, "&Eclipses\tF7", "View upcoming eclipses"
+        )
         menubar.Append(view_menu, "&View")
 
         # Help menu
@@ -132,6 +149,18 @@ class MainWindow(wx.Frame):
         # Aurora Tab
         self.aurora_panel = self._create_aurora_panel(self.notebook)
         self.notebook.AddPage(self.aurora_panel, "Aurora & Space Weather")
+
+        # Meteor Showers Tab
+        self.meteor_panel = self._create_meteor_panel(self.notebook)
+        self.notebook.AddPage(self.meteor_panel, "Meteor Showers")
+
+        # Planets Tab
+        self.planets_panel = self._create_planets_panel(self.notebook)
+        self.notebook.AddPage(self.planets_panel, "Planets")
+
+        # Eclipses Tab
+        self.eclipse_panel = self._create_eclipse_panel(self.notebook)
+        self.notebook.AddPage(self.eclipse_panel, "Eclipses")
 
         main_sizer.Add(self.notebook, 1, wx.ALL | wx.EXPAND, 10)
 
@@ -325,6 +354,118 @@ class MainWindow(wx.Frame):
         panel.SetSizer(sizer)
         return panel
 
+    def _create_meteor_panel(self, parent: wx.Window) -> wx.Panel:
+        """Create the meteor showers panel."""
+        panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Active showers
+        active_label = wx.StaticText(panel, label="Active Meteor Showers")
+        active_label.SetName("Section: Active Meteor Showers")
+        active_label.SetFont(active_label.GetFont().Bold())
+        sizer.Add(active_label, 0, wx.ALL, 5)
+
+        self.active_showers_text = wx.TextCtrl(
+            panel,
+            value="Loading meteor shower data...",
+            style=wx.TE_MULTILINE | wx.TE_READONLY,
+            size=(-1, 100),
+        )
+        self.active_showers_text.SetName("Currently active meteor showers")
+        sizer.Add(self.active_showers_text, 0, wx.ALL | wx.EXPAND, 5)
+
+        # Upcoming showers
+        upcoming_label = wx.StaticText(panel, label="Upcoming Meteor Showers")
+        upcoming_label.SetName("Section: Upcoming Meteor Showers")
+        upcoming_label.SetFont(upcoming_label.GetFont().Bold())
+        sizer.Add(upcoming_label, 0, wx.ALL, 5)
+
+        self.meteor_list = wx.ListBox(panel)
+        self.meteor_list.SetName("List of upcoming meteor showers with peak dates")
+        sizer.Add(self.meteor_list, 1, wx.ALL | wx.EXPAND, 5)
+
+        # Refresh button
+        refresh_btn = wx.Button(panel, label="&Refresh Meteor Data")
+        refresh_btn.SetName("Refresh meteor shower information")
+        refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_meteors)
+        sizer.Add(refresh_btn, 0, wx.ALL, 5)
+
+        panel.SetSizer(sizer)
+        return panel
+
+    def _create_planets_panel(self, parent: wx.Window) -> wx.Panel:
+        """Create the planets visibility panel."""
+        panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Visible planets
+        visible_label = wx.StaticText(panel, label="Visible Planets Tonight")
+        visible_label.SetName("Section: Visible Planets Tonight")
+        visible_label.SetFont(visible_label.GetFont().Bold())
+        sizer.Add(visible_label, 0, wx.ALL, 5)
+
+        self.planets_text = wx.TextCtrl(
+            panel,
+            value="Loading planet visibility data...",
+            style=wx.TE_MULTILINE | wx.TE_READONLY,
+            size=(-1, 200),
+        )
+        self.planets_text.SetName("List of planets visible tonight with viewing times")
+        sizer.Add(self.planets_text, 0, wx.ALL | wx.EXPAND, 5)
+
+        # Planet list
+        self.planets_list = wx.ListBox(panel)
+        self.planets_list.SetName("Detailed planet visibility information")
+        sizer.Add(self.planets_list, 1, wx.ALL | wx.EXPAND, 5)
+
+        # Refresh button
+        refresh_btn = wx.Button(panel, label="&Refresh Planet Data")
+        refresh_btn.SetName("Refresh planet visibility")
+        refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_planets)
+        sizer.Add(refresh_btn, 0, wx.ALL, 5)
+
+        panel.SetSizer(sizer)
+        return panel
+
+    def _create_eclipse_panel(self, parent: wx.Window) -> wx.Panel:
+        """Create the eclipses panel."""
+        panel = wx.Panel(parent)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Next eclipse
+        next_label = wx.StaticText(panel, label="Next Eclipse")
+        next_label.SetName("Section: Next Eclipse")
+        next_label.SetFont(next_label.GetFont().Bold())
+        sizer.Add(next_label, 0, wx.ALL, 5)
+
+        self.next_eclipse_text = wx.TextCtrl(
+            panel,
+            value="Loading eclipse data...",
+            style=wx.TE_MULTILINE | wx.TE_READONLY,
+            size=(-1, 100),
+        )
+        self.next_eclipse_text.SetName("Information about the next upcoming eclipse")
+        sizer.Add(self.next_eclipse_text, 0, wx.ALL | wx.EXPAND, 5)
+
+        # Upcoming eclipses list
+        upcoming_label = wx.StaticText(panel, label="Upcoming Eclipses (2025-2030)")
+        upcoming_label.SetName("Section: Upcoming Eclipses")
+        upcoming_label.SetFont(upcoming_label.GetFont().Bold())
+        sizer.Add(upcoming_label, 0, wx.ALL, 5)
+
+        self.eclipse_list = wx.ListBox(panel)
+        self.eclipse_list.SetName("List of upcoming solar and lunar eclipses")
+        sizer.Add(self.eclipse_list, 1, wx.ALL | wx.EXPAND, 5)
+
+        # Refresh button
+        refresh_btn = wx.Button(panel, label="&Refresh Eclipse Data")
+        refresh_btn.SetName("Refresh eclipse calendar")
+        refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh_eclipses)
+        sizer.Add(refresh_btn, 0, wx.ALL, 5)
+
+        panel.SetSizer(sizer)
+        return panel
+
     def _bind_events(self) -> None:
         """Bind event handlers."""
         self.Bind(wx.EVT_MENU, self._on_refresh, id=wx.ID_REFRESH)
@@ -347,6 +488,15 @@ class MainWindow(wx.Frame):
         self.Bind(
             wx.EVT_MENU, lambda e: self.notebook.SetSelection(3), id=self.aurora_menu_item.GetId()
         )
+        self.Bind(
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(4), id=self.meteor_menu_item.GetId()
+        )
+        self.Bind(
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(5), id=self.planets_menu_item.GetId()
+        )
+        self.Bind(
+            wx.EVT_MENU, lambda e: self.notebook.SetSelection(6), id=self.eclipse_menu_item.GetId()
+        )
 
         self.set_location_btn.Bind(wx.EVT_BUTTON, self._on_set_location)
 
@@ -367,6 +517,9 @@ class MainWindow(wx.Frame):
                 self._load_moon_data()
                 self._load_sun_data()
                 self._load_aurora_data()
+                self._load_meteor_data()
+                self._load_planet_data()
+                self._load_eclipse_data()
                 wx.CallAfter(self._on_data_loaded)
             except Exception as e:
                 logger.error(f"Failed to load data: {e}")
@@ -559,6 +712,114 @@ class MainWindow(wx.Frame):
         thread = threading.Thread(target=self._load_aurora_data, daemon=True)
         thread.start()
 
+    def _load_meteor_data(self) -> None:
+        """Load meteor shower data."""
+        try:
+            # Get active showers
+            active = get_active_showers()
+            if active:
+                active_text = "\n".join([str(s) for s in active])
+            else:
+                active_text = "No meteor showers currently active"
+            wx.CallAfter(self.active_showers_text.SetValue, active_text)
+
+            # Get upcoming showers
+            upcoming = get_upcoming_showers(days=90)
+            upcoming_strings = [str(s) for s in upcoming]
+            if not upcoming_strings:
+                upcoming_strings = ["No upcoming meteor showers in next 90 days"]
+            wx.CallAfter(self.meteor_list.Set, upcoming_strings)
+
+        except Exception as e:
+            logger.error(f"Meteor data error: {e}")
+            wx.CallAfter(self.active_showers_text.SetValue, f"Error: {e}")
+
+    def _on_refresh_meteors(self, event: wx.CommandEvent) -> None:
+        """Handle meteor refresh request."""
+        self.SetStatusText("Refreshing meteor shower data...")
+        thread = threading.Thread(target=self._load_meteor_data, daemon=True)
+        thread.start()
+
+    def _load_planet_data(self) -> None:
+        """Load planet visibility data."""
+        try:
+            visible = get_visible_planets()
+            
+            if visible:
+                summary_lines = []
+                detail_lines = []
+                
+                for planet in visible:
+                    summary_lines.append(
+                        f"• {planet.planet.name}: {planet.visibility.value}"
+                    )
+                    detail_lines.append(str(planet))
+                
+                summary_text = "Visible Planets Tonight:\n\n" + "\n".join(summary_lines)
+                wx.CallAfter(self.planets_text.SetValue, summary_text)
+                wx.CallAfter(self.planets_list.Set, detail_lines)
+            else:
+                wx.CallAfter(
+                    self.planets_text.SetValue,
+                    "No planets currently visible (all too close to the Sun)"
+                )
+                wx.CallAfter(self.planets_list.Set, [])
+
+        except Exception as e:
+            logger.error(f"Planet data error: {e}")
+            wx.CallAfter(self.planets_text.SetValue, f"Error: {e}")
+
+    def _on_refresh_planets(self, event: wx.CommandEvent) -> None:
+        """Handle planet refresh request."""
+        self.SetStatusText("Refreshing planet visibility...")
+        thread = threading.Thread(target=self._load_planet_data, daemon=True)
+        thread.start()
+
+    def _load_eclipse_data(self) -> None:
+        """Load eclipse data."""
+        try:
+            upcoming = get_upcoming_eclipses(years=5)
+            
+            if upcoming:
+                # Show next eclipse details
+                next_eclipse = upcoming[0]
+                next_text = (
+                    f"{next_eclipse.eclipse_type.emoji} {next_eclipse.eclipse_type.value}\n"
+                    f"Date: {next_eclipse.date.strftime('%B %d, %Y')}\n"
+                    f"Time: {next_eclipse.max_time.strftime('%H:%M UTC')}\n"
+                )
+                if next_eclipse.duration_minutes:
+                    mins = int(next_eclipse.duration_minutes)
+                    secs = int((next_eclipse.duration_minutes - mins) * 60)
+                    next_text += f"Duration: {mins}m {secs}s\n"
+                if next_eclipse.visibility_regions:
+                    regions = ", ".join(next_eclipse.visibility_regions[:5])
+                    next_text += f"Visible from: {regions}"
+                if next_eclipse.notes:
+                    next_text += f"\n\nNote: {next_eclipse.notes}"
+                
+                wx.CallAfter(self.next_eclipse_text.SetValue, next_text)
+                
+                # Show list of all upcoming
+                eclipse_strings = [str(e) for e in upcoming]
+                wx.CallAfter(self.eclipse_list.Set, eclipse_strings)
+            else:
+                wx.CallAfter(
+                    self.next_eclipse_text.SetValue,
+                    "No eclipse data available"
+                )
+                wx.CallAfter(self.eclipse_list.Set, [])
+
+        except Exception as e:
+            logger.error(f"Eclipse data error: {e}")
+            wx.CallAfter(self.next_eclipse_text.SetValue, f"Error: {e}")
+
+    def _on_refresh_eclipses(self, event: wx.CommandEvent) -> None:
+        """Handle eclipse refresh request."""
+        self.SetStatusText("Refreshing eclipse data...")
+        thread = threading.Thread(target=self._load_eclipse_data, daemon=True)
+        thread.start()
+
     def _on_settings(self, event: wx.CommandEvent) -> None:
         """Open settings dialog."""
         wx.MessageBox(
@@ -586,8 +847,9 @@ class MainWindow(wx.Frame):
         info.SetDescription(
             "Accessible sky tracking application.\n\n"
             "Track ISS passes, moon phases, sun times,\n"
-            "aurora forecasts, and more with full\n"
-            "screen reader support."
+            "aurora forecasts, meteor showers, planets,\n"
+            "eclipses, and more with full screen reader\n"
+            "support."
         )
         info.SetCopyright("© 2026 Josh (Orinks)")
         info.SetWebSite("https://github.com/Orinks/AccessiSky")
@@ -610,6 +872,9 @@ class MainWindow(wx.Frame):
             await self.sun_client.close()
             await self.moon_client.close()
             await self.aurora_client.close()
+            await self.meteor_client.close()
+            await self.planet_client.close()
+            await self.eclipse_client.close()
 
         try:
             run_async(cleanup())
