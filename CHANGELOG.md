@@ -13,7 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Natural language summary designed for screen readers
   - New "Tonight" tab as first tab for quick access (F1)
   - Accessible UI with proper labels for all elements
-- Daily briefing (in progress)
+- **Daily Briefing API**: Comprehensive day summary for planning
+  - Sunrise and sunset times with day length
+  - Moon phase, illumination, and rise/set times
+  - All ISS passes (daytime and visible)
+  - Visible planets and active meteor showers
+  - Eclipse alerts (when applicable)
+  - Space weather summary (Kp index, solar wind, aurora visibility)
+  - Structured data output (`as_dict()`) for programmatic access
+  - Human-readable summary for screen readers
+  - Designed for external tools (Moltbot cron jobs, morning briefings)
 
 ## [0.2.0] - 2026-01-30
 

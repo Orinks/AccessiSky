@@ -1,6 +1,12 @@
 """API clients for AccessiSky."""
 
 from .aurora import AuroraClient, AuroraForecast, GeomagActivity, KpIndex, SolarWind
+from .briefing import (
+    DailyBriefing,
+    DailyBriefingData,
+    SpaceWeatherSummary,
+    generate_briefing_text,
+)
 from .darksky import (
     DarkSkyClient,
     DarkSkyWindow,
@@ -138,4 +144,9 @@ __all__ = [
     "TonightData",
     "TonightSummary",
     "generate_summary_text",
+    # Daily Briefing
+    "DailyBriefing",
+    "DailyBriefingData",
+    "SpaceWeatherSummary",
+    "generate_briefing_text",
 ]
