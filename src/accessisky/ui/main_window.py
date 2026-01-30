@@ -680,6 +680,49 @@ class MainWindow(wx.Frame):
         # Ensure focus starts in a sensible place
         self.notebook.SetFocus()
 
+    def _format_time(self, dt: datetime, include_date: bool = False) -> str:
+        """Format a datetime with both local and UTC times."""
+        if include_date:
+            utc_str = dt.strftime("%Y-%m-%d %H:%M:%S UTC")
+        else:
+            utc_str = dt.strftime("%H:%M:%S UTC")
+
+        tz_name = self.location.timezone if self.location else None
+        if tz_name:
+            try:
+                from zoneinfo import ZoneInfo
+
+                local_tz = ZoneInfo(tz_name)
+                local_dt = dt.astimezone(local_tz)
+                if include_date:
+                    local_str = local_dt.strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    local_str = local_dt.strftime("%H:%M:%S")
+                # Get short timezone abbreviation
+                tz_abbr = local_dt.strftime("%Z") or tz_name.split("/")[-1]
+                return f"{local_str} {tz_abbr} ({utc_str})"
+            except Exception:
+                pass
+        return utc_str
+
+    def _format_time_short(self, dt: datetime) -> str:
+        """Format a datetime with both local and UTC times (short format HH:MM)."""
+        utc_str = dt.strftime("%H:%M UTC")
+
+        tz_name = self.location.timezone if self.location else None
+        if tz_name:
+            try:
+                from zoneinfo import ZoneInfo
+
+                local_tz = ZoneInfo(tz_name)
+                local_dt = dt.astimezone(local_tz)
+                local_str = local_dt.strftime("%H:%M")
+                tz_abbr = local_dt.strftime("%Z") or tz_name.split("/")[-1]
+                return f"{local_str} {tz_abbr} ({utc_str})"
+            except Exception:
+                pass
+        return utc_str
+
     def _load_all_data(self) -> None:
         """Load all data in background."""
         self.SetStatusText("Loading data...")
@@ -807,7 +850,7 @@ class MainWindow(wx.Frame):
                     f"Longitude: {position.longitude:.4f}°\n"
                     f"Altitude: ~{position.altitude:.0f} km\n"
                     f"Velocity: ~{position.velocity:.2f} km/s\n"
-                    f"Updated: {position.timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+                    f"Updated: {self._format_time(position.timestamp, include_date=True)}"
                 )
                 wx.CallAfter(self.iss_position_text.SetValue, text)
 
@@ -872,38 +915,20 @@ class MainWindow(wx.Frame):
                 self.location.longitude,
             )
 
-        def format_time_dual(dt: datetime, tz_name: str | None) -> str:
-            """Format a datetime with both local and UTC times."""
-            utc_str = dt.strftime("%H:%M:%S UTC")
-            if tz_name:
-                try:
-                    from zoneinfo import ZoneInfo
-
-                    local_tz = ZoneInfo(tz_name)
-                    local_dt = dt.astimezone(local_tz)
-                    local_str = local_dt.strftime("%H:%M:%S")
-                    # Get short timezone abbreviation
-                    tz_abbr = local_dt.strftime("%Z") or tz_name.split("/")[-1]
-                    return f"{local_str} {tz_abbr} ({utc_str})"
-                except Exception:
-                    pass
-            return utc_str
-
         try:
             times = run_async(fetch())
             if times:
-                tz = self.location.timezone
                 text = (
-                    f"Sunrise: {format_time_dual(times.sunrise, tz)}\n"
-                    f"Sunset: {format_time_dual(times.sunset, tz)}\n"
-                    f"Solar Noon: {format_time_dual(times.solar_noon, tz)}\n"
-                    f"\nTwilight Times (UTC):\n"
-                    f"Civil: {times.civil_twilight_begin.strftime('%H:%M')} - {times.civil_twilight_end.strftime('%H:%M')}\n"
-                    f"Nautical: {times.nautical_twilight_begin.strftime('%H:%M')} - {times.nautical_twilight_end.strftime('%H:%M')}\n"
-                    f"Astronomical: {times.astronomical_twilight_begin.strftime('%H:%M')} - {times.astronomical_twilight_end.strftime('%H:%M')}\n"
-                    f"\nGolden Hour (UTC):\n"
-                    f"Morning: until {times.golden_hour_morning_end.strftime('%H:%M')}\n"
-                    f"Evening: from {times.golden_hour_evening_start.strftime('%H:%M')}"
+                    f"Sunrise: {self._format_time(times.sunrise)}\n"
+                    f"Sunset: {self._format_time(times.sunset)}\n"
+                    f"Solar Noon: {self._format_time(times.solar_noon)}\n"
+                    f"\nTwilight Times:\n"
+                    f"Civil: {self._format_time_short(times.civil_twilight_begin)} - {self._format_time_short(times.civil_twilight_end)}\n"
+                    f"Nautical: {self._format_time_short(times.nautical_twilight_begin)} - {self._format_time_short(times.nautical_twilight_end)}\n"
+                    f"Astronomical: {self._format_time_short(times.astronomical_twilight_begin)} - {self._format_time_short(times.astronomical_twilight_end)}\n"
+                    f"\nGolden Hour:\n"
+                    f"Morning: until {self._format_time_short(times.golden_hour_morning_end)}\n"
+                    f"Evening: from {self._format_time_short(times.golden_hour_evening_start)}"
                 )
                 wx.CallAfter(self.sun_times_text.SetValue, text)
 
@@ -946,7 +971,7 @@ class MainWindow(wx.Frame):
                 text = (
                     f"Speed: {solar_wind.speed_km_s:.0f} km/s{elevated}\n"
                     f"Density: {solar_wind.density_p_cm3:.1f} protons/cm³\n"
-                    f"Updated: {solar_wind.timestamp.strftime('%H:%M UTC')}"
+                    f"Updated: {self._format_time_short(solar_wind.timestamp)}"
                 )
                 wx.CallAfter(self.solar_wind_text.SetValue, text)
             else:
@@ -1056,7 +1081,7 @@ class MainWindow(wx.Frame):
                 next_text = (
                     f"{next_eclipse.eclipse_type.emoji} {next_eclipse.eclipse_type.value}\n"
                     f"Date: {next_eclipse.date.strftime('%B %d, %Y')}\n"
-                    f"Time: {next_eclipse.max_time.strftime('%H:%M UTC')}\n"
+                    f"Time: {self._format_time_short(next_eclipse.max_time)}\n"
                 )
                 if next_eclipse.duration_minutes:
                     mins = int(next_eclipse.duration_minutes)
