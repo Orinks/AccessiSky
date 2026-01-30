@@ -1,8 +1,6 @@
 """Tests for Viewing Conditions score calculation."""
 
-from datetime import date, datetime, timezone
 
-import pytest
 
 from accessisky.api.viewing import (
     CloudCover,
@@ -39,7 +37,7 @@ class TestMoonInterference:
         low = get_moon_interference(illumination_percent=20)
         mid = get_moon_interference(illumination_percent=50)
         high = get_moon_interference(illumination_percent=80)
-        
+
         assert low < mid < high
 
 
@@ -57,10 +55,10 @@ class TestCloudCover:
         """Test creating cloud cover from percentage."""
         clear = CloudCover.from_percent(10)
         assert clear == CloudCover.CLEAR
-        
+
         partly = CloudCover.from_percent(35)
         assert partly == CloudCover.PARTLY_CLOUDY
-        
+
         overcast = CloudCover.from_percent(95)
         assert overcast == CloudCover.OVERCAST
 
@@ -80,7 +78,7 @@ class TestViewingScore:
         """Test creating score from numeric value."""
         excellent = ViewingScore.from_value(90)
         assert excellent == ViewingScore.EXCELLENT
-        
+
         poor = ViewingScore.from_value(30)
         assert poor == ViewingScore.POOR
 
@@ -95,7 +93,7 @@ class TestCalculateViewingScore:
             moon_illumination_percent=0,
             is_astronomical_night=True,
         )
-        
+
         assert score >= 90  # Should be excellent
 
     def test_terrible_conditions(self):
@@ -105,28 +103,28 @@ class TestCalculateViewingScore:
             moon_illumination_percent=100,
             is_astronomical_night=False,
         )
-        
+
         assert score < 30  # Should be poor or not recommended
 
     def test_cloud_cover_impact(self):
         """Test that cloud cover significantly impacts score."""
         clear = calculate_viewing_score(cloud_cover_percent=0)
         cloudy = calculate_viewing_score(cloud_cover_percent=80)
-        
+
         assert clear > cloudy + 30  # Significant difference
 
     def test_moon_impact(self):
         """Test that moon illumination impacts score."""
         new_moon = calculate_viewing_score(moon_illumination_percent=0)
         full_moon = calculate_viewing_score(moon_illumination_percent=100)
-        
+
         assert new_moon > full_moon + 10  # Noticeable difference
 
     def test_twilight_impact(self):
         """Test that twilight reduces score."""
         night = calculate_viewing_score(is_astronomical_night=True)
         twilight = calculate_viewing_score(is_astronomical_night=False)
-        
+
         assert night > twilight
 
 
@@ -143,7 +141,7 @@ class TestViewingConditions:
             is_dark_sky=True,
             summary="Good conditions for observing",
         )
-        
+
         assert conditions.score == ViewingScore.GOOD
         assert conditions.numeric_score == 75
         assert conditions.is_dark_sky is True
@@ -158,7 +156,7 @@ class TestViewingConditions:
             is_dark_sky=True,
             summary="Excellent stargazing conditions",
         )
-        
+
         s = str(conditions)
         assert "Excellent" in s or "excellent" in s.lower()
 
@@ -173,7 +171,7 @@ class TestViewingConditions:
             summary="Fair conditions",
             recommendations=["Moon is bright - best for planets", "Some clouds expected"],
         )
-        
+
         assert len(conditions.recommendations) == 2
 
 
@@ -186,7 +184,7 @@ class TestGetViewingConditions:
             cloud_cover_percent=20,
             moon_illumination_percent=40,
         )
-        
+
         assert isinstance(conditions, ViewingConditions)
 
     def test_conditions_has_all_fields(self):
@@ -195,7 +193,7 @@ class TestGetViewingConditions:
             cloud_cover_percent=50,
             moon_illumination_percent=50,
         )
-        
+
         assert conditions.score is not None
         assert conditions.numeric_score is not None
         assert conditions.cloud_cover is not None

@@ -1,8 +1,6 @@
 """Tests for Meteor Shower data."""
 
-from datetime import date, datetime, timezone
-
-import pytest
+from datetime import date
 
 from accessisky.api.meteors import (
     MeteorShower,
@@ -21,7 +19,7 @@ class TestMeteorShowerData:
         """Test getting all meteor showers."""
         showers = get_all_showers()
         assert len(showers) >= 10  # At least major showers
-        
+
         # Check required fields
         for shower in showers:
             assert shower.name
@@ -33,7 +31,7 @@ class TestMeteorShowerData:
         """Test Perseids shower data (most famous shower)."""
         showers = get_all_showers()
         perseids = next((s for s in showers if "Perseid" in s.name), None)
-        
+
         assert perseids is not None
         assert perseids.peak_month == 8  # August
         assert perseids.peak_day in range(11, 14)
@@ -43,7 +41,7 @@ class TestMeteorShowerData:
         """Test Geminids shower data."""
         showers = get_all_showers()
         geminids = next((s for s in showers if "Geminid" in s.name), None)
-        
+
         assert geminids is not None
         assert geminids.peak_month == 12  # December
         assert geminids.zhr >= 120  # Very active
@@ -64,7 +62,7 @@ class TestGetUpcomingShowers:
         # Use a fixed date for testing
         test_date = date(2026, 7, 15)
         upcoming = get_upcoming_showers(from_date=test_date, days=60)
-        
+
         assert len(upcoming) > 0
         # Should include Perseids (peaks Aug 12)
         names = [s.shower.name for s in upcoming]
@@ -74,7 +72,7 @@ class TestGetUpcomingShowers:
         """Test that upcoming showers are sorted by peak date."""
         test_date = date(2026, 1, 1)
         upcoming = get_upcoming_showers(from_date=test_date, days=365)
-        
+
         for i in range(len(upcoming) - 1):
             assert upcoming[i].peak_date <= upcoming[i + 1].peak_date
 
@@ -82,7 +80,7 @@ class TestGetUpcomingShowers:
         """Test that upcoming info includes calculated peak date."""
         test_date = date(2026, 1, 1)
         upcoming = get_upcoming_showers(from_date=test_date, days=60)
-        
+
         for info in upcoming:
             assert info.peak_date is not None
             assert info.peak_date.year == 2026
@@ -95,7 +93,7 @@ class TestGetActiveShowers:
         """Test active showers during Perseids peak."""
         test_date = date(2026, 8, 12)  # Perseids peak
         active = get_active_showers(on_date=test_date)
-        
+
         names = [s.shower.name for s in active]
         assert any("Perseid" in name for name in names)
 
@@ -104,13 +102,13 @@ class TestGetActiveShowers:
         # Perseids active roughly July 17 - Aug 24
         early_date = date(2026, 7, 1)  # Before activity
         peak_date = date(2026, 8, 12)  # During activity
-        
+
         early_active = get_active_showers(on_date=early_date)
         peak_active = get_active_showers(on_date=peak_date)
-        
-        early_names = [s.shower.name for s in early_active]
+
+        [s.shower.name for s in early_active]
         peak_names = [s.shower.name for s in peak_active]
-        
+
         # Perseids should be active during peak but not early
         assert any("Perseid" in name for name in peak_names)
 
@@ -121,7 +119,7 @@ class TestGetShowerInfo:
     def test_get_shower_info_by_name(self):
         """Test getting info for specific shower."""
         info = get_shower_info("Perseids", year=2026)
-        
+
         assert info is not None
         assert "Perseid" in info.shower.name
         assert info.peak_date.year == 2026
@@ -131,7 +129,7 @@ class TestGetShowerInfo:
         """Test that shower lookup is case insensitive."""
         info1 = get_shower_info("perseids", year=2026)
         info2 = get_shower_info("PERSEIDS", year=2026)
-        
+
         assert info1 is not None
         assert info2 is not None
         assert info1.shower.name == info2.shower.name
@@ -165,7 +163,7 @@ class TestMeteorShowerInfo:
             is_active=True,
             days_until_peak=0,
         )
-        
+
         s = str(info)
         assert "Test Shower" in s
         assert "100" in s  # ZHR
@@ -184,6 +182,6 @@ class TestMeteorShowerInfo:
             is_active=True,
             days_until_peak=0,
         )
-        
+
         # High ZHR at peak should be excellent
         assert info.viewing_rating in ["Excellent", "Good", "Fair", "Poor"]

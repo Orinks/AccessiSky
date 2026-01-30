@@ -2,15 +2,12 @@
 
 from datetime import date, datetime, timezone
 
-import pytest
-
 from accessisky.api.eclipses import (
     Eclipse,
-    EclipseInfo,
     EclipseType,
     get_all_eclipses,
-    get_upcoming_eclipses,
     get_eclipse_info,
+    get_upcoming_eclipses,
 )
 
 
@@ -50,7 +47,7 @@ class TestEclipseData:
     def test_eclipses_have_required_fields(self):
         """Test that eclipses have all required fields."""
         eclipses = get_all_eclipses()
-        
+
         for eclipse in eclipses:
             assert eclipse.eclipse_type is not None
             assert eclipse.date is not None
@@ -59,7 +56,7 @@ class TestEclipseData:
     def test_eclipses_sorted_by_date(self):
         """Test that eclipses are sorted by date."""
         eclipses = get_all_eclipses()
-        
+
         for i in range(len(eclipses) - 1):
             assert eclipses[i].date <= eclipses[i + 1].date
 
@@ -72,14 +69,14 @@ class TestGetUpcomingEclipses:
         # Use a fixed date for testing
         test_date = date(2026, 1, 1)
         upcoming = get_upcoming_eclipses(from_date=test_date, years=3)
-        
+
         assert len(upcoming) > 0
 
     def test_upcoming_are_future(self):
         """Test that upcoming eclipses are in the future."""
         test_date = date(2026, 6, 1)
         upcoming = get_upcoming_eclipses(from_date=test_date)
-        
+
         for eclipse in upcoming:
             assert eclipse.date >= test_date
 
@@ -90,7 +87,7 @@ class TestGetUpcomingEclipses:
             years=5,
             solar_only=True,
         )
-        
+
         for eclipse in upcoming:
             assert eclipse.eclipse_type.is_solar
 
@@ -101,7 +98,7 @@ class TestGetUpcomingEclipses:
             years=5,
             lunar_only=True,
         )
-        
+
         for eclipse in upcoming:
             assert eclipse.eclipse_type.is_lunar
 
@@ -116,15 +113,15 @@ class TestGetEclipseInfo:
         if all_eclipses:
             first_eclipse = all_eclipses[0]
             info = get_eclipse_info(first_eclipse.date)
-            
+
             assert info is not None
             assert info.date == first_eclipse.date
 
     def test_get_eclipse_info_no_eclipse(self):
         """Test getting info when no eclipse on date."""
         # Pick a random date unlikely to have an eclipse
-        info = get_eclipse_info(date(2026, 6, 15))
-        
+        get_eclipse_info(date(2026, 6, 15))
+
         # May or may not find one depending on data
         # Just ensure no crash
 
@@ -141,7 +138,7 @@ class TestEclipseInfo:
             duration_minutes=6.4,
             visibility_regions=["Spain", "Morocco", "Egypt"],
         )
-        
+
         s = str(eclipse)
         assert "Solar" in s or "solar" in s.lower()
         assert "2027" in s
@@ -154,7 +151,7 @@ class TestEclipseInfo:
             max_time=datetime(2027, 8, 2, 10, 7, tzinfo=timezone.utc),
             visibility_regions=["North America", "Europe"],
         )
-        
+
         assert eclipse.is_visible_from("Europe")
         assert eclipse.is_visible_from("north america")  # Case insensitive
         assert not eclipse.is_visible_from("Australia")
@@ -170,9 +167,9 @@ class TestEclipseDataAccuracy:
             years=1,
             lunar_only=True,
         )
-        
+
         # March 2026 has a total lunar eclipse
-        march_eclipses = [e for e in upcoming if e.date.month == 3]
+        [e for e in upcoming if e.date.month == 3]
         # May or may not be in our data - just check no crash
 
     def test_2027_august_solar(self):
@@ -182,7 +179,7 @@ class TestEclipseDataAccuracy:
             years=1,
             solar_only=True,
         )
-        
+
         # August 2027 has a famous total solar eclipse
         aug_eclipses = [e for e in upcoming if e.date.month == 8]
         # Should find the 2027 eclipse

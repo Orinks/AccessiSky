@@ -1,8 +1,6 @@
 """Tests for Dark Sky Times calculations."""
 
-from datetime import date, datetime, time, timezone
-
-import pytest
+from datetime import date, datetime, timezone
 
 from accessisky.api.darksky import (
     DarkSkyWindow,
@@ -41,7 +39,7 @@ class TestDarkSkyWindow:
             darkness_ends=datetime(2026, 6, 16, 3, 30, tzinfo=timezone.utc),
             darkness_duration_hours=5.0,
         )
-        
+
         assert window.date == date(2026, 6, 15)
         assert window.darkness_duration_hours == 5.0
 
@@ -53,7 +51,7 @@ class TestDarkSkyWindow:
             darkness_ends=datetime(2026, 6, 16, 3, 30, tzinfo=timezone.utc),
             darkness_duration_hours=5.0,
         )
-        
+
         s = str(window)
         assert "22:30" in s or "10:30" in s  # Depends on formatting
         assert "5" in s  # Hours
@@ -66,15 +64,15 @@ class TestDarkSkyWindow:
             darkness_ends=datetime(2026, 6, 16, 4, 0, tzinfo=timezone.utc),
             darkness_duration_hours=6.0,
         )
-        
+
         # During darkness
         during = datetime(2026, 6, 16, 1, 0, tzinfo=timezone.utc)
         assert window.is_currently_dark(during)
-        
+
         # Before darkness
         before = datetime(2026, 6, 15, 20, 0, tzinfo=timezone.utc)
         assert not window.is_currently_dark(before)
-        
+
         # After darkness
         after = datetime(2026, 6, 16, 5, 0, tzinfo=timezone.utc)
         assert not window.is_currently_dark(after)
@@ -92,7 +90,7 @@ class TestGetDarkSkyWindow:
             astronomical_twilight_end=datetime(2026, 3, 15, 20, 30, tzinfo=timezone.utc),
             astronomical_twilight_begin=datetime(2026, 3, 16, 5, 30, tzinfo=timezone.utc),
         )
-        
+
         assert isinstance(window, DarkSkyWindow)
         assert window.darkness_duration_hours > 0
 
@@ -106,7 +104,7 @@ class TestGetDarkSkyWindow:
             astronomical_twilight_end=datetime(2026, 6, 22, 0, 0, tzinfo=timezone.utc),
             astronomical_twilight_begin=datetime(2026, 6, 22, 2, 0, tzinfo=timezone.utc),
         )
-        
+
         # Winter night
         winter = get_dark_sky_window(
             latitude=60.0,
@@ -115,7 +113,7 @@ class TestGetDarkSkyWindow:
             astronomical_twilight_end=datetime(2026, 12, 21, 16, 0, tzinfo=timezone.utc),
             astronomical_twilight_begin=datetime(2026, 12, 22, 8, 0, tzinfo=timezone.utc),
         )
-        
+
         # Winter should have longer dark period
         assert winter.darkness_duration_hours > summer.darkness_duration_hours
 
@@ -129,7 +127,7 @@ class TestGetDarkSkyWindow:
             astronomical_twilight_end=None,  # No true darkness
             astronomical_twilight_begin=None,
         )
-        
+
         assert window.darkness_duration_hours == 0
         assert window.no_darkness_reason is not None
 
@@ -143,7 +141,7 @@ class TestGetDarknessDuration:
             darkness_begins=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
             darkness_ends=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
         )
-        
+
         assert duration == 8.0  # 8 hours
 
     def test_handles_midnight_crossing(self):
@@ -152,7 +150,7 @@ class TestGetDarknessDuration:
             darkness_begins=datetime(2026, 3, 15, 23, 0, tzinfo=timezone.utc),
             darkness_ends=datetime(2026, 3, 16, 3, 0, tzinfo=timezone.utc),
         )
-        
+
         assert duration == 4.0
 
 
@@ -166,7 +164,7 @@ class TestIsAstronomicalDarkness:
             twilight_end=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
             twilight_begin=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
         )
-        
+
         assert is_dark is True
 
     def test_during_twilight(self):
@@ -176,7 +174,7 @@ class TestIsAstronomicalDarkness:
             twilight_end=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
             twilight_begin=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
         )
-        
+
         assert is_dark is False
 
     def test_no_twilight_data(self):
@@ -186,5 +184,5 @@ class TestIsAstronomicalDarkness:
             twilight_end=None,
             twilight_begin=None,
         )
-        
+
         assert is_dark is False  # Assume not dark if no data

@@ -65,13 +65,13 @@ class Eclipse:
         date_str = self.date.strftime("%Y-%m-%d")
         time_str = self.max_time.strftime("%H:%M UTC")
         regions = ", ".join(self.visibility_regions[:3]) if self.visibility_regions else "Various"
-        
+
         duration_str = ""
         if self.duration_minutes:
             mins = int(self.duration_minutes)
             secs = int((self.duration_minutes - mins) * 60)
             duration_str = f" ({mins}m {secs}s)"
-        
+
         return f"{self.eclipse_type.emoji} {type_str} on {date_str} at {time_str}{duration_str} - Visible: {regions}"
 
 
@@ -162,7 +162,15 @@ ECLIPSES: list[Eclipse] = [
         date=date(2027, 8, 2),
         max_time=datetime(2027, 8, 2, 10, 7, tzinfo=timezone.utc),
         duration_minutes=6.4,
-        visibility_regions=["Spain", "Morocco", "Algeria", "Libya", "Egypt", "Saudi Arabia", "Yemen"],
+        visibility_regions=[
+            "Spain",
+            "Morocco",
+            "Algeria",
+            "Libya",
+            "Egypt",
+            "Saudi Arabia",
+            "Yemen",
+        ],
         magnitude=1.079,
         notes="One of the best total solar eclipses of the century - crosses Mediterranean",
     ),
@@ -309,7 +317,7 @@ def get_upcoming_eclipses(
         from_date = date.today()
 
     end_date = date(from_date.year + years, from_date.month, from_date.day)
-    
+
     results = []
     for eclipse in ECLIPSES:
         if eclipse.date < from_date:

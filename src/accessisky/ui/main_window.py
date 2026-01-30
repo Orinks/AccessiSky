@@ -13,11 +13,10 @@ import wx.adv
 from ..api.aurora import AuroraClient
 from ..api.eclipses import EclipseClient, get_upcoming_eclipses
 from ..api.iss import ISSClient
-from ..api.meteors import MeteorClient, get_upcoming_showers, get_active_showers
+from ..api.meteors import MeteorClient, get_active_showers, get_upcoming_showers
 from ..api.moon import MoonClient
 from ..api.planets import PlanetClient, get_visible_planets
 from ..api.sun import SunClient
-from ..api.viewing import get_viewing_conditions
 from .dialogs.location import Location, LocationDialog, load_location
 
 if TYPE_CHECKING:
@@ -104,9 +103,7 @@ class MainWindow(wx.Frame):
         self.meteor_menu_item = view_menu.Append(
             wx.ID_ANY, "&Meteor Showers\tF5", "View meteor shower calendar"
         )
-        self.planets_menu_item = view_menu.Append(
-            wx.ID_ANY, "&Planets\tF6", "View visible planets"
-        )
+        self.planets_menu_item = view_menu.Append(wx.ID_ANY, "&Planets\tF6", "View visible planets")
         self.eclipse_menu_item = view_menu.Append(
             wx.ID_ANY, "&Eclipses\tF7", "View upcoming eclipses"
         )
@@ -744,24 +741,22 @@ class MainWindow(wx.Frame):
         """Load planet visibility data."""
         try:
             visible = get_visible_planets()
-            
+
             if visible:
                 summary_lines = []
                 detail_lines = []
-                
+
                 for planet in visible:
-                    summary_lines.append(
-                        f"• {planet.planet.name}: {planet.visibility.value}"
-                    )
+                    summary_lines.append(f"• {planet.planet.name}: {planet.visibility.value}")
                     detail_lines.append(str(planet))
-                
+
                 summary_text = "Visible Planets Tonight:\n\n" + "\n".join(summary_lines)
                 wx.CallAfter(self.planets_text.SetValue, summary_text)
                 wx.CallAfter(self.planets_list.Set, detail_lines)
             else:
                 wx.CallAfter(
                     self.planets_text.SetValue,
-                    "No planets currently visible (all too close to the Sun)"
+                    "No planets currently visible (all too close to the Sun)",
                 )
                 wx.CallAfter(self.planets_list.Set, [])
 
@@ -779,7 +774,7 @@ class MainWindow(wx.Frame):
         """Load eclipse data."""
         try:
             upcoming = get_upcoming_eclipses(years=5)
-            
+
             if upcoming:
                 # Show next eclipse details
                 next_eclipse = upcoming[0]
@@ -797,17 +792,14 @@ class MainWindow(wx.Frame):
                     next_text += f"Visible from: {regions}"
                 if next_eclipse.notes:
                     next_text += f"\n\nNote: {next_eclipse.notes}"
-                
+
                 wx.CallAfter(self.next_eclipse_text.SetValue, next_text)
-                
+
                 # Show list of all upcoming
                 eclipse_strings = [str(e) for e in upcoming]
                 wx.CallAfter(self.eclipse_list.Set, eclipse_strings)
             else:
-                wx.CallAfter(
-                    self.next_eclipse_text.SetValue,
-                    "No eclipse data available"
-                )
+                wx.CallAfter(self.next_eclipse_text.SetValue, "No eclipse data available")
                 wx.CallAfter(self.eclipse_list.Set, [])
 
         except Exception as e:

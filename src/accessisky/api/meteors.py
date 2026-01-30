@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 
@@ -76,10 +76,7 @@ class MeteorShowerInfo:
             status = "Peak tonight!"
         elif self.days_until_peak > 0:
             status = f"Peak in {self.days_until_peak} days"
-        return (
-            f"{self.shower.name}: {status} "
-            f"(ZHR ~{self.shower.zhr}, {self.viewing_rating})"
-        )
+        return f"{self.shower.name}: {status} (ZHR ~{self.shower.zhr}, {self.viewing_rating})"
 
 
 # Major meteor showers with known dates
@@ -260,16 +257,13 @@ def _is_shower_active(shower: MeteorShower, on_date: date) -> bool:
     """Check if a shower is active on a given date."""
     year = on_date.year
     start, end = _get_activity_range(shower, year)
-    
+
     if start <= on_date <= end:
         return True
-    
+
     # Check previous year (for showers spanning year boundary)
     start_prev, end_prev = _get_activity_range(shower, year - 1)
-    if start_prev <= on_date <= end_prev:
-        return True
-    
-    return False
+    return start_prev <= on_date <= end_prev
 
 
 def get_upcoming_showers(
@@ -296,11 +290,11 @@ def get_upcoming_showers(
         # Check current year and next year
         for year in [from_date.year, from_date.year + 1]:
             peak = _get_peak_date(shower, year)
-            
+
             if from_date <= peak <= end_date:
                 days_until = (peak - from_date).days
                 is_active = _is_shower_active(shower, from_date)
-                
+
                 results.append(
                     MeteorShowerInfo(
                         shower=shower,
@@ -335,7 +329,7 @@ def get_active_showers(on_date: date | None = None) -> list[MeteorShowerInfo]:
             # Find the relevant peak date
             year = on_date.year
             peak = _get_peak_date(shower, year)
-            
+
             # If peak is before current date and shower spans year boundary
             if peak < on_date:
                 next_peak = _get_peak_date(shower, year + 1)
@@ -371,7 +365,7 @@ def get_shower_info(name: str, year: int | None = None) -> MeteorShowerInfo | No
         year = date.today().year
 
     name_lower = name.lower()
-    
+
     for shower in METEOR_SHOWERS:
         if name_lower in shower.name.lower():
             peak = _get_peak_date(shower, year)
@@ -404,9 +398,7 @@ class MeteorClient:
         """Get currently active meteor showers."""
         return get_active_showers()
 
-    async def get_shower_info(
-        self, name: str, year: int | None = None
-    ) -> MeteorShowerInfo | None:
+    async def get_shower_info(self, name: str, year: int | None = None) -> MeteorShowerInfo | None:
         """Get info about a specific shower."""
         return get_shower_info(name, year)
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from enum import Enum
 
 
@@ -155,7 +155,7 @@ def _days_since_j2000(dt: datetime | date) -> float:
         dt = datetime.combine(dt, datetime.min.time().replace(hour=12), tzinfo=timezone.utc)
     elif dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    
+
     delta = dt - J2000
     return delta.total_seconds() / 86400.0
 
@@ -172,60 +172,54 @@ def _mean_longitude(planet: Planet, days: float) -> float:
 def _calculate_elongation(planet: Planet, on_date: date) -> float:
     """
     Calculate approximate elongation (angular distance from Sun).
-    
+
     This is a simplified calculation that gives reasonable results
     for casual observing purposes.
     """
     days = _days_since_j2000(on_date)
-    
+
     # Get Earth's longitude
     earth = next(p for p in PLANETS if p.name == "Earth")
     earth_longitude = _mean_longitude(earth, days)
-    
+
     # Get planet's longitude
     planet_longitude = _mean_longitude(planet, days)
-    
+
     # For inner planets, elongation is limited by orbit
     if planet.is_inner_planet:
         # Calculate heliocentric angle
         angle_diff = (planet_longitude - earth_longitude) % 360
-        
+
         # Maximum elongation for inner planets
         max_elongation = math.degrees(math.asin(planet.semi_major_axis_au))
-        
+
         # Approximate current elongation based on orbital position
         # This is simplified - real calculations are more complex
-        if angle_diff < 180:
-            phase = angle_diff / 180.0
-        else:
-            phase = (360 - angle_diff) / 180.0
-        
+        phase = angle_diff / 180.0 if angle_diff < 180 else (360 - angle_diff) / 180.0
+
         elongation = max_elongation * math.sin(phase * math.pi)
         return abs(elongation)
-    
+
     else:
         # For outer planets, elongation can be up to 180 degrees
         angle_diff = (planet_longitude - earth_longitude) % 360
-        
+
         # Convert to elongation (0-180)
-        if angle_diff > 180:
-            elongation = 360 - angle_diff
-        else:
-            elongation = angle_diff
-        
+        elongation = 360 - angle_diff if angle_diff > 180 else angle_diff
+
         return elongation
 
 
 def _determine_visibility(planet: Planet, elongation: float) -> tuple[PlanetVisibility, str | None]:
     """
     Determine visibility status based on elongation.
-    
+
     Returns visibility enum and best viewing time description.
     """
     # Planets too close to Sun are not visible
     if elongation < 10:
         return PlanetVisibility.NOT_VISIBLE, None
-    
+
     if planet.is_inner_planet:
         # Inner planets: morning or evening only
         # Need to determine if east or west of Sun
@@ -251,7 +245,7 @@ def _determine_visibility(planet: Planet, elongation: float) -> tuple[PlanetVisi
 def _estimate_magnitude(planet: Planet, elongation: float) -> float:
     """Estimate current apparent magnitude."""
     min_mag, max_mag = planet.magnitude_range
-    
+
     if planet.is_inner_planet:
         # Inner planets are brightest when more illuminated
         # but also when closest to Earth
@@ -279,36 +273,38 @@ def get_visible_planets(
 ) -> list[PlanetInfo]:
     """
     Get list of planets visible on a given date.
-    
+
     Args:
         on_date: Date to check (defaults to today)
         min_elongation: Minimum elongation from Sun to be considered visible
-    
+
     Returns:
         List of PlanetInfo for visible planets
     """
     if on_date is None:
         on_date = date.today()
-    
+
     results = []
-    
+
     for planet in get_all_planets():
         elongation = _calculate_elongation(planet, on_date)
-        
+
         if elongation >= min_elongation:
             visibility, viewing_time = _determine_visibility(planet, elongation)
-            
+
             if visibility != PlanetVisibility.NOT_VISIBLE:
                 magnitude = _estimate_magnitude(planet, elongation)
-                
-                results.append(PlanetInfo(
-                    planet=planet,
-                    visibility=visibility,
-                    best_viewing_time=viewing_time,
-                    elongation_degrees=round(elongation, 1),
-                    current_magnitude=round(magnitude, 1),
-                ))
-    
+
+                results.append(
+                    PlanetInfo(
+                        planet=planet,
+                        visibility=visibility,
+                        best_viewing_time=viewing_time,
+                        elongation_degrees=round(elongation, 1),
+                        current_magnitude=round(magnitude, 1),
+                    )
+                )
+
     # Sort by brightness (most negative magnitude first)
     results.sort(key=lambda x: x.current_magnitude or 10)
     return results
@@ -320,27 +316,27 @@ def get_planet_info(
 ) -> PlanetInfo | None:
     """
     Get information about a specific planet.
-    
+
     Args:
         name: Planet name (case insensitive)
         on_date: Date to check (defaults to today)
-    
+
     Returns:
         PlanetInfo or None if planet not found
     """
     if on_date is None:
         on_date = date.today()
-    
+
     name_lower = name.lower()
     planet = next((p for p in PLANETS if p.name.lower() == name_lower), None)
-    
+
     if planet is None or planet.name == "Earth":
         return None
-    
+
     elongation = _calculate_elongation(planet, on_date)
     visibility, viewing_time = _determine_visibility(planet, elongation)
     magnitude = _estimate_magnitude(planet, elongation)
-    
+
     return PlanetInfo(
         planet=planet,
         visibility=visibility,

@@ -57,7 +57,7 @@ class DarkSkyWindow:
     darkness_begins: datetime | None  # When astronomical twilight ends
     darkness_ends: datetime | None  # When astronomical twilight begins (morning)
     darkness_duration_hours: float
-    
+
     # Additional info
     no_darkness_reason: str | None = None  # E.g., "Polar day - no true darkness"
     best_viewing_time: datetime | None = None  # Midpoint of darkness
@@ -68,53 +68,53 @@ class DarkSkyWindow:
         """Check if it's currently astronomical darkness."""
         if self.darkness_begins is None or self.darkness_ends is None:
             return False
-        
+
         if check_time.tzinfo is None:
             check_time = check_time.replace(tzinfo=timezone.utc)
-        
+
         return self.darkness_begins <= check_time <= self.darkness_ends
 
     def time_until_darkness(self, from_time: datetime) -> timedelta | None:
         """Get time until darkness begins."""
         if self.darkness_begins is None:
             return None
-        
+
         if from_time.tzinfo is None:
             from_time = from_time.replace(tzinfo=timezone.utc)
-        
+
         if from_time >= self.darkness_begins:
             return timedelta(0)
-        
+
         return self.darkness_begins - from_time
 
     def time_remaining(self, from_time: datetime) -> timedelta | None:
         """Get time remaining in darkness window."""
         if self.darkness_ends is None:
             return None
-        
+
         if from_time.tzinfo is None:
             from_time = from_time.replace(tzinfo=timezone.utc)
-        
+
         if from_time >= self.darkness_ends:
             return timedelta(0)
-        
+
         if self.darkness_begins and from_time < self.darkness_begins:
             return self.darkness_ends - self.darkness_begins
-        
+
         return self.darkness_ends - from_time
 
     def __str__(self) -> str:
         if self.no_darkness_reason:
             return f"Dark Sky: {self.no_darkness_reason}"
-        
+
         if self.darkness_begins is None or self.darkness_ends is None:
             return "Dark Sky: No data available"
-        
+
         begin_str = self.darkness_begins.strftime("%H:%M UTC")
         end_str = self.darkness_ends.strftime("%H:%M UTC")
         hours = int(self.darkness_duration_hours)
         mins = int((self.darkness_duration_hours - hours) * 60)
-        
+
         return f"Dark Sky: {begin_str} to {end_str} ({hours}h {mins}m of true darkness)"
 
 
@@ -124,11 +124,11 @@ def get_darkness_duration(
 ) -> float:
     """
     Calculate duration of darkness in hours.
-    
+
     Args:
         darkness_begins: When astronomical twilight ends
         darkness_ends: When astronomical twilight begins (morning)
-    
+
     Returns:
         Duration in hours
     """
@@ -143,21 +143,21 @@ def is_astronomical_darkness(
 ) -> bool:
     """
     Check if a given time is during astronomical darkness.
-    
+
     Args:
         check_time: Time to check
         twilight_end: When astronomical twilight ends (evening)
         twilight_begin: When astronomical twilight begins (morning)
-    
+
     Returns:
         True if currently in astronomical darkness
     """
     if twilight_end is None or twilight_begin is None:
         return False
-    
+
     if check_time.tzinfo is None:
         check_time = check_time.replace(tzinfo=timezone.utc)
-    
+
     return twilight_end <= check_time <= twilight_begin
 
 
@@ -172,10 +172,10 @@ def get_dark_sky_window(
 ) -> DarkSkyWindow:
     """
     Get the dark sky window for astrophotography.
-    
+
     This calculates the window of true astronomical darkness,
     when the Sun is more than 18° below the horizon.
-    
+
     Args:
         latitude: Observer latitude
         longitude: Observer longitude
@@ -184,7 +184,7 @@ def get_dark_sky_window(
         astronomical_twilight_begin: When twilight begins next morning
         moon_rise: Optional moon rise time
         moon_set: Optional moon set time
-    
+
     Returns:
         DarkSkyWindow with darkness timing information
     """
@@ -198,7 +198,7 @@ def get_dark_sky_window(
                 reason = "Unable to determine twilight times"
         else:
             reason = "Twilight data not available"
-        
+
         return DarkSkyWindow(
             date=target_date,
             darkness_begins=None,
@@ -206,14 +206,14 @@ def get_dark_sky_window(
             darkness_duration_hours=0,
             no_darkness_reason=reason,
         )
-    
+
     # Calculate duration
     duration = get_darkness_duration(astronomical_twilight_end, astronomical_twilight_begin)
-    
+
     # Calculate best viewing time (midpoint)
     total_seconds = (astronomical_twilight_begin - astronomical_twilight_end).total_seconds()
     best_time = astronomical_twilight_end + timedelta(seconds=total_seconds / 2)
-    
+
     return DarkSkyWindow(
         date=target_date,
         darkness_begins=astronomical_twilight_end,
@@ -228,10 +228,10 @@ def get_dark_sky_window(
 def get_twilight_type(sun_altitude: float) -> TwilightType:
     """
     Determine twilight type based on Sun's altitude.
-    
+
     Args:
         sun_altitude: Sun's altitude in degrees (negative = below horizon)
-    
+
     Returns:
         TwilightType for current conditions
     """
