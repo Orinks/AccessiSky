@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-30
+
 ### Added
 - **Location Search**: Search for cities by name using Open-Meteo geocoding API
   - No more manual lat/lon entry required
@@ -27,10 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Structured data output (`as_dict()`) for programmatic access
   - Human-readable summary for screen readers
   - Designed for external tools (Moltbot cron jobs, morning briefings)
-
-## [0.2.0] - 2026-01-30
-
-### Added
 - **Meteor Shower Calendar**: 11 major annual showers with peak dates, ZHR, viewing ratings
 - **Planet Visibility**: Track all 7 observable planets with visibility status
 - **Eclipse Calendar**: Solar and lunar eclipses from 2025-2030

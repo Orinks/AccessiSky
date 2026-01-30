@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "accessisky"
-version = "0.1.0"
+version = "0.2.0"
 description = "Accessible sky tracking app - ISS passes, satellites, moon phases, and astronomy"
 readme = "README.md"
 license = "MIT"

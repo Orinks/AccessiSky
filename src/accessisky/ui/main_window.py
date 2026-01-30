@@ -42,7 +42,7 @@ class MainWindow(wx.Frame):
         """Initialize the main window."""
         super().__init__(
             parent,
-            title="AccessiSky - Sky Tracker",
+            title="AccessiSky",
             size=(800, 600),
             style=wx.DEFAULT_FRAME_STYLE,
         )
