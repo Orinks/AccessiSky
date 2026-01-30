@@ -2,13 +2,21 @@
 
 Data sourced from NASA Eclipse website and astronomical almanacs.
 Covers eclipses from 2025-2030.
+
+Also supports USNO API for location-specific solar eclipse visibility.
 """
 
 from __future__ import annotations
 
+import contextlib
+import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from enum import Enum
+
+import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class EclipseType(Enum):
@@ -289,6 +297,33 @@ ECLIPSES: list[Eclipse] = [
 # Type alias for clarity
 EclipseInfo = Eclipse
 
+# USNO API base URL
+USNO_API_BASE = "https://aa.usno.navy.mil/api"
+
+
+@dataclass
+class LocalEclipseVisibility:
+    """Location-specific eclipse visibility data from USNO API."""
+
+    magnitude: float | None = None
+    obscuration_percent: float | None = None
+    eclipse_begins: str | None = None
+    maximum_eclipse: str | None = None
+    eclipse_ends: str | None = None
+    description: str | None = None
+
+    def __str__(self) -> str:
+        if self.description and "not visible" in self.description.lower():
+            return self.description
+        parts = []
+        if self.obscuration_percent is not None:
+            parts.append(f"{self.obscuration_percent}% obscuration")
+        if self.magnitude is not None:
+            parts.append(f"magnitude {self.magnitude}")
+        if self.maximum_eclipse:
+            parts.append(f"max at {self.maximum_eclipse}")
+        return ", ".join(parts) if parts else (self.description or "Unknown")
+
 
 def get_all_eclipses() -> list[Eclipse]:
     """Get list of all eclipses in database."""
@@ -375,7 +410,11 @@ def get_next_eclipse(
 
 
 class EclipseClient:
-    """Client interface for eclipse data (for consistency with other API clients)."""
+    """Client interface for eclipse data with USNO API support."""
+
+    def __init__(self, timeout: float = 10.0):
+        """Initialize the eclipse client."""
+        self.timeout = timeout
 
     async def get_all_eclipses(self) -> list[Eclipse]:
         """Get all eclipses in database."""
@@ -404,6 +443,161 @@ class EclipseClient:
             solar_only=solar_only,
             lunar_only=lunar_only,
         )
+
+    async def get_local_visibility(
+        self,
+        eclipse_date: date,
+        latitude: float,
+        longitude: float,
+        height: int = 0,
+    ) -> LocalEclipseVisibility | None:
+        """
+        Get location-specific visibility for a solar eclipse from USNO API.
+
+        Args:
+            eclipse_date: Date of the eclipse
+            latitude: Observer latitude
+            longitude: Observer longitude
+            height: Observer height in meters (default 0)
+
+        Returns:
+            LocalEclipseVisibility with local data, or None if not visible/error
+        """
+        try:
+            url = f"{USNO_API_BASE}/eclipses/solar/date"
+            params = {
+                "date": eclipse_date.strftime("%Y-%m-%d"),
+                "coords": f"{latitude},{longitude}",
+                "height": str(height),
+            }
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                data = response.json()
+
+                props = data.get("properties", {})
+                description = props.get("description", "")
+
+                # Check if eclipse is not visible at this location
+                if "not visible" in description.lower():
+                    return LocalEclipseVisibility(description=description)
+
+                # Parse magnitude and obscuration
+                magnitude = None
+                if "magnitude" in props:
+                    with contextlib.suppress(ValueError, TypeError):
+                        magnitude = float(props["magnitude"])
+
+                obscuration = None
+                if "obscuration" in props:
+                    with contextlib.suppress(ValueError, TypeError):
+                        # Remove % sign if present
+                        obs_str = props["obscuration"].replace("%", "").strip()
+                        obscuration = float(obs_str)
+
+                # Parse local timing data
+                eclipse_begins = None
+                maximum_eclipse = None
+                eclipse_ends = None
+
+                for event in props.get("local_data", []):
+                    phenomenon = event.get("phenomenon", "").lower()
+                    time = event.get("time", "")
+                    # Strip subseconds for cleaner display
+                    if "." in time:
+                        time = time.split(".")[0]
+
+                    if "begins" in phenomenon:
+                        eclipse_begins = time
+                    elif "maximum" in phenomenon:
+                        maximum_eclipse = time
+                    elif "ends" in phenomenon:
+                        eclipse_ends = time
+
+                return LocalEclipseVisibility(
+                    magnitude=magnitude,
+                    obscuration_percent=obscuration,
+                    eclipse_begins=eclipse_begins,
+                    maximum_eclipse=maximum_eclipse,
+                    eclipse_ends=eclipse_ends,
+                    description=description,
+                )
+
+        except httpx.TimeoutException:
+            logger.error("USNO API request timed out")
+            return None
+        except httpx.HTTPStatusError as e:
+            logger.error(f"USNO API HTTP error: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"USNO API error: {e}")
+            return None
+
+    async def get_solar_eclipses_for_year(self, year: int) -> list[Eclipse]:
+        """
+        Fetch solar eclipses for a year from USNO API.
+
+        Args:
+            year: Year to query
+
+        Returns:
+            List of Eclipse objects for solar eclipses in that year
+        """
+        try:
+            url = f"{USNO_API_BASE}/eclipses/solar/year"
+            params = {"year": str(year)}
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                data = response.json()
+
+                eclipses = []
+                for item in data.get("eclipses_in_year", []):
+                    eclipse_date = date(
+                        item.get("year", year),
+                        item.get("month", 1),
+                        item.get("day", 1),
+                    )
+                    event_str = item.get("event", "").lower()
+
+                    # Determine eclipse type from event string
+                    if "total" in event_str:
+                        eclipse_type = EclipseType.TOTAL_SOLAR
+                    elif "annular" in event_str:
+                        eclipse_type = EclipseType.ANNULAR_SOLAR
+                    elif "hybrid" in event_str:
+                        eclipse_type = EclipseType.HYBRID_SOLAR
+                    else:
+                        eclipse_type = EclipseType.PARTIAL_SOLAR
+
+                    eclipses.append(
+                        Eclipse(
+                            eclipse_type=eclipse_type,
+                            date=eclipse_date,
+                            max_time=datetime(
+                                eclipse_date.year,
+                                eclipse_date.month,
+                                eclipse_date.day,
+                                12,
+                                0,
+                                tzinfo=timezone.utc,
+                            ),
+                        )
+                    )
+
+                return eclipses
+
+        except httpx.TimeoutException:
+            logger.error("USNO API request timed out")
+            return []
+        except httpx.HTTPStatusError as e:
+            logger.error(f"USNO API HTTP error: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"USNO API error: {e}")
+            return []
 
     async def close(self) -> None:
         """No-op for API consistency."""

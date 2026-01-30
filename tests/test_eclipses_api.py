@@ -1,10 +1,15 @@
 """Tests for Eclipse Calendar data."""
 
 from datetime import date, datetime, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from accessisky.api.eclipses import (
     Eclipse,
+    EclipseClient,
     EclipseType,
+    LocalEclipseVisibility,
     get_all_eclipses,
     get_eclipse_info,
     get_upcoming_eclipses,
@@ -185,3 +190,157 @@ class TestEclipseDataAccuracy:
         # Should find the 2027 eclipse
         if aug_eclipses:
             assert any(e.eclipse_type == EclipseType.TOTAL_SOLAR for e in aug_eclipses)
+
+
+class TestLocalEclipseVisibility:
+    """Tests for location-specific eclipse visibility data."""
+
+    def test_visibility_creation(self):
+        """Test creating local visibility data."""
+        visibility = LocalEclipseVisibility(
+            magnitude=0.186,
+            obscuration_percent=9.4,
+            eclipse_begins="17:07:43",
+            maximum_eclipse="17:54:07",
+            eclipse_ends="18:38:45",
+            description="Sun in Partial Eclipse at this Location",
+        )
+        assert visibility.magnitude == 0.186
+        assert visibility.obscuration_percent == 9.4
+        assert visibility.description == "Sun in Partial Eclipse at this Location"
+
+    def test_visibility_str(self):
+        """Test string representation of visibility."""
+        visibility = LocalEclipseVisibility(
+            magnitude=0.85,
+            obscuration_percent=75.2,
+            eclipse_begins="10:00:00",
+            maximum_eclipse="11:30:00",
+            eclipse_ends="13:00:00",
+        )
+        s = str(visibility)
+        assert "75.2%" in s or "75.2" in s
+
+
+class TestEclipseClientUSNO:
+    """Tests for USNO API integration."""
+
+    @pytest.fixture
+    def client(self):
+        """Create an eclipse client for testing."""
+        return EclipseClient()
+
+    @pytest.mark.asyncio
+    async def test_get_local_visibility_success(self, client):
+        """Test getting local visibility data from USNO API."""
+        mock_response_data = {
+            "apiversion": "4.0.1",
+            "properties": {
+                "description": "Sun in Partial Eclipse at this Location",
+                "magnitude": "0.186",
+                "obscuration": "9.4%",
+                "local_data": [
+                    {"phenomenon": "Eclipse Begins", "time": "17:07:43.9"},
+                    {"phenomenon": "Maximum Eclipse", "time": "17:54:07.0"},
+                    {"phenomenon": "Eclipse Ends", "time": "18:38:45.2"},
+                ],
+            },
+        }
+
+        mock_client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status = MagicMock()
+        mock_client.get.return_value = mock_response
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
+
+            visibility = await client.get_local_visibility(
+                eclipse_date=date(2026, 8, 12),
+                latitude=40.7128,
+                longitude=-74.006,
+            )
+
+            assert visibility is not None
+            assert visibility.magnitude == 0.186
+            assert visibility.obscuration_percent == 9.4
+
+    @pytest.mark.asyncio
+    async def test_get_local_visibility_not_visible(self, client):
+        """Test when eclipse is not visible from location."""
+        mock_response_data = {
+            "apiversion": "4.0.1",
+            "properties": {
+                "description": "Eclipse Not Visible at this Location",
+            },
+        }
+
+        mock_client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status = MagicMock()
+        mock_client.get.return_value = mock_response
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
+
+            visibility = await client.get_local_visibility(
+                eclipse_date=date(2026, 8, 12),
+                latitude=-33.8688,
+                longitude=151.2093,
+            )
+
+            # Should return None or visibility with "not visible" indication
+            assert visibility is None or "not visible" in visibility.description.lower()
+
+    @pytest.mark.asyncio
+    async def test_get_local_visibility_handles_api_error(self, client):
+        """Test graceful handling of API errors."""
+        import httpx
+
+        mock_client = AsyncMock()
+        mock_client.get.side_effect = httpx.TimeoutException("timeout")
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
+
+            visibility = await client.get_local_visibility(
+                eclipse_date=date(2026, 8, 12),
+                latitude=40.7128,
+                longitude=-74.006,
+            )
+
+            # Should return None on error, not crash
+            assert visibility is None
+
+    @pytest.mark.asyncio
+    async def test_get_solar_eclipses_for_year(self, client):
+        """Test fetching solar eclipses for a year from USNO API."""
+        mock_response_data = {
+            "apiversion": "4.0.1",
+            "year": 2026,
+            "eclipses_in_year": [
+                {"day": 17, "month": 2, "year": 2026, "event": "Annular Solar Eclipse"},
+                {"day": 12, "month": 8, "year": 2026, "event": "Total Solar Eclipse"},
+            ],
+        }
+
+        mock_client = AsyncMock()
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status = MagicMock()
+        mock_client.get.return_value = mock_response
+
+        with patch("httpx.AsyncClient") as mock_async_client:
+            mock_async_client.return_value.__aenter__.return_value = mock_client
+            mock_async_client.return_value.__aexit__.return_value = None
+
+            eclipses = await client.get_solar_eclipses_for_year(2026)
+
+            assert len(eclipses) == 2
+            assert eclipses[0].date == date(2026, 2, 17)
+            assert eclipses[1].date == date(2026, 8, 12)
