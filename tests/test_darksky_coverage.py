@@ -113,9 +113,7 @@ class TestTimeUntilDarkness:
             darkness_duration_hours=0,
             no_darkness_reason="Polar day",
         )
-        result = window.time_until_darkness(
-            datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
-        )
+        result = window.time_until_darkness(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
         assert result is None
 
     def test_before_darkness(self):
@@ -166,9 +164,7 @@ class TestTimeRemaining:
             darkness_ends=None,
             darkness_duration_hours=0,
         )
-        result = window.time_remaining(
-            datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
-        )
+        result = window.time_remaining(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
         assert result is None
 
     def test_after_darkness_ends_returns_zero(self):
@@ -282,9 +278,7 @@ class TestIsCurrentlyDarkEdgeCases:
             darkness_ends=None,
             darkness_duration_hours=0,
         )
-        assert not window.is_currently_dark(
-            datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc)
-        )
+        assert not window.is_currently_dark(datetime(2026, 6, 21, 12, 0, tzinfo=timezone.utc))
 
     def test_naive_datetime(self):
         window = DarkSkyWindow(
@@ -354,21 +348,15 @@ class TestGetDarkSkyWindowEdgeCases:
             astronomical_twilight_end=None,
             astronomical_twilight_begin=None,
         )
-        assert window.no_darkness_reason == (
-            "Polar twilight - no true darkness during summer"
-        )
+        assert window.no_darkness_reason == ("Polar twilight - no true darkness during summer")
 
     def test_best_viewing_time_is_midpoint(self):
         window = get_dark_sky_window(
             latitude=45.0,
             longitude=-75.0,
             target_date=date(2026, 3, 15),
-            astronomical_twilight_end=datetime(
-                2026, 3, 15, 20, 0, tzinfo=timezone.utc
-            ),
-            astronomical_twilight_begin=datetime(
-                2026, 3, 16, 4, 0, tzinfo=timezone.utc
-            ),
+            astronomical_twilight_end=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
+            astronomical_twilight_begin=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
         )
         expected_midpoint = datetime(2026, 3, 16, 0, 0, tzinfo=timezone.utc)
         assert window.best_viewing_time == expected_midpoint
@@ -380,12 +368,8 @@ class TestGetDarkSkyWindowEdgeCases:
             latitude=45.0,
             longitude=-75.0,
             target_date=date(2026, 3, 15),
-            astronomical_twilight_end=datetime(
-                2026, 3, 15, 20, 0, tzinfo=timezone.utc
-            ),
-            astronomical_twilight_begin=datetime(
-                2026, 3, 16, 4, 0, tzinfo=timezone.utc
-            ),
+            astronomical_twilight_end=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
+            astronomical_twilight_begin=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
             moon_rise=moon_rise,
             moon_set=moon_set,
         )
@@ -398,9 +382,7 @@ class TestGetDarkSkyWindowEdgeCases:
             longitude=-75.0,
             target_date=date(2026, 3, 15),
             astronomical_twilight_end=None,
-            astronomical_twilight_begin=datetime(
-                2026, 3, 16, 4, 0, tzinfo=timezone.utc
-            ),
+            astronomical_twilight_begin=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
         )
         assert window.darkness_duration_hours == 0
         assert window.no_darkness_reason is not None
@@ -410,9 +392,7 @@ class TestGetDarkSkyWindowEdgeCases:
             latitude=45.0,
             longitude=-75.0,
             target_date=date(2026, 3, 15),
-            astronomical_twilight_end=datetime(
-                2026, 3, 15, 20, 0, tzinfo=timezone.utc
-            ),
+            astronomical_twilight_end=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
             astronomical_twilight_begin=None,
         )
         assert window.darkness_duration_hours == 0
@@ -446,12 +426,8 @@ class TestDarkSkyClient:
             latitude=45.0,
             longitude=-75.0,
             target_date=date(2026, 3, 15),
-            astronomical_twilight_end=datetime(
-                2026, 3, 15, 20, 0, tzinfo=timezone.utc
-            ),
-            astronomical_twilight_begin=datetime(
-                2026, 3, 16, 4, 0, tzinfo=timezone.utc
-            ),
+            astronomical_twilight_end=datetime(2026, 3, 15, 20, 0, tzinfo=timezone.utc),
+            astronomical_twilight_begin=datetime(2026, 3, 16, 4, 0, tzinfo=timezone.utc),
         )
         assert isinstance(window, DarkSkyWindow)
         assert window.darkness_duration_hours == 8.0
