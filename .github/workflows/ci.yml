@@ -58,9 +58,8 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: false
 
-  # Run API-only tests on Linux (no wxPython needed)
-  test-api:
-    runs-on: ubuntu-latest
+  test-linux:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       
@@ -69,12 +68,19 @@ jobs:
         with:
           python-version: '3.12'
       
-      - name: Install API dependencies only
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
+      
+      - name: Install wxPython from extras repo
+        run: pip install -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04 wxPython
+      
+      - name: Verify wxPython installation
+        run: python -c "import wx; print(f'wxPython {wx.version()} installed successfully')"
+      
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install httpx python-dateutil pytest pytest-asyncio pytest-cov respx
+          pip install -e .[dev]
       
-      - name: Run API tests
-        run: |
-          export PYTHONPATH="${PYTHONPATH}:src"
-          pytest tests/test_*_api.py -v --ignore=tests/test_app.py || true
+      - name: Run tests
+        run: pytest --cov=src/accessisky --cov-report=xml -v

@@ -1,11 +1,8 @@
 """Tests for AccessiSky app module."""
 
-import pytest
-
 
 def test_import_app():
     """Test that the app module can be imported."""
-    pytest.importorskip("wx", reason="wxPython not installed")
     from accessisky import app
 
     assert hasattr(app, "main")
