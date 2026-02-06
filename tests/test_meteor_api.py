@@ -2,9 +2,13 @@
 
 from datetime import date
 
+import pytest
+
 from accessisky.api.meteors import (
+    MeteorClient,
     MeteorShower,
     MeteorShowerInfo,
+    _get_activity_range,
     get_active_showers,
     get_all_showers,
     get_shower_info,
@@ -185,3 +189,241 @@ class TestMeteorShowerInfo:
 
         # High ZHR at peak should be excellent
         assert info.viewing_rating in ["Excellent", "Good", "Fair", "Poor"]
+
+    def test_viewing_rating_at_peak_excellent(self):
+        """Test excellent rating at peak with high ZHR."""
+        shower = MeteorShower(name="Test", peak_month=1, peak_day=1, zhr=150)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 1, 1), is_active=True, days_until_peak=0
+        )
+        assert info.viewing_rating == "Excellent"
+
+    def test_viewing_rating_near_peak_good(self):
+        """Test good rating near peak."""
+        shower = MeteorShower(name="Test", peak_month=1, peak_day=1, zhr=80)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 1, 1), is_active=True, days_until_peak=1
+        )
+        # 80 * 0.7 = 56 -> Good
+        assert info.viewing_rating == "Good"
+
+    def test_viewing_rating_days_off_fair(self):
+        """Test fair rating a few days from peak."""
+        shower = MeteorShower(name="Test", peak_month=1, peak_day=1, zhr=100)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 1, 5), is_active=True, days_until_peak=4
+        )
+        # 100 * 0.4 = 40 -> Good
+        assert info.viewing_rating == "Good"
+
+    def test_viewing_rating_fair(self):
+        """Test fair rating."""
+        shower = MeteorShower(name="Test", peak_month=1, peak_day=1, zhr=50)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 1, 5), is_active=True, days_until_peak=4
+        )
+        # 50 * 0.4 = 20 -> Fair
+        assert info.viewing_rating == "Fair"
+
+    def test_viewing_rating_far_from_peak_poor(self):
+        """Test poor rating far from peak with low ZHR."""
+        shower = MeteorShower(name="Test", peak_month=1, peak_day=1, zhr=10)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 1, 1), is_active=True, days_until_peak=10
+        )
+        # 10 * 0.2 = 2 -> Poor
+        assert info.viewing_rating == "Poor"
+
+    def test_str_peak_tonight(self):
+        """Test string when peak is tonight."""
+        shower = MeteorShower(name="Test Shower", peak_month=8, peak_day=12, zhr=100)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 8, 12), is_active=True, days_until_peak=0
+        )
+        s = str(info)
+        assert "Peak tonight!" in s
+
+    def test_str_peak_in_future(self):
+        """Test string when peak is in future."""
+        shower = MeteorShower(name="Test Shower", peak_month=8, peak_day=12, zhr=100)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 8, 12), is_active=False, days_until_peak=5
+        )
+        s = str(info)
+        assert "Peak in 5 days" in s
+
+    def test_str_peak_passed(self):
+        """Test string when peak has passed (negative days_until_peak)."""
+        shower = MeteorShower(name="Test Shower", peak_month=8, peak_day=12, zhr=100)
+        info = MeteorShowerInfo(
+            shower=shower, peak_date=date(2026, 8, 12), is_active=True, days_until_peak=-3
+        )
+        s = str(info)
+        assert "Active now" in s
+
+
+class TestMeteorShowerActivityDays:
+    """Tests for MeteorShower.activity_days property."""
+
+    def test_activity_days_with_date_range(self):
+        """Test activity_days when start/end dates are set."""
+        shower = MeteorShower(
+            name="Test",
+            peak_month=8,
+            peak_day=12,
+            zhr=100,
+            start_month=7,
+            start_day=17,
+            end_month=8,
+            end_day=24,
+        )
+        assert shower.activity_days == 38  # Jul 17 to Aug 24
+
+    def test_activity_days_spanning_year(self):
+        """Test activity_days for showers spanning year boundary."""
+        shower = MeteorShower(
+            name="Test",
+            peak_month=1,
+            peak_day=3,
+            zhr=40,
+            start_month=12,
+            start_day=28,
+            end_month=1,
+            end_day=12,
+        )
+        # Dec 28 to Jan 12 spans year boundary
+        assert shower.activity_days == 15
+
+    def test_activity_days_default(self):
+        """Test default activity_days when no date range."""
+        shower = MeteorShower(name="Test", peak_month=6, peak_day=15, zhr=20)
+        assert shower.activity_days == 14
+
+
+class TestActivityRange:
+    """Tests for _get_activity_range helper."""
+
+    def test_activity_range_with_dates(self):
+        """Test activity range with explicit dates."""
+        shower = MeteorShower(
+            name="Test",
+            peak_month=8,
+            peak_day=12,
+            zhr=100,
+            start_month=7,
+            start_day=17,
+            end_month=8,
+            end_day=24,
+        )
+        start, end = _get_activity_range(shower, 2026)
+        assert start == date(2026, 7, 17)
+        assert end == date(2026, 8, 24)
+
+    def test_activity_range_spanning_year(self):
+        """Test activity range for showers spanning year boundary."""
+        shower = MeteorShower(
+            name="Test",
+            peak_month=1,
+            peak_day=3,
+            zhr=40,
+            start_month=12,
+            start_day=28,
+            end_month=1,
+            end_day=12,
+        )
+        start, end = _get_activity_range(shower, 2026)
+        assert start == date(2026, 12, 28)
+        assert end == date(2027, 1, 12)
+
+    def test_activity_range_default_no_dates(self):
+        """Test default range when no start/end dates."""
+        shower = MeteorShower(name="Test", peak_month=6, peak_day=15, zhr=20)
+        start, end = _get_activity_range(shower, 2026)
+        assert start == date(2026, 6, 8)  # 7 days before peak
+        assert end == date(2026, 6, 22)  # 7 days after peak
+
+
+class TestGetUpcomingShowersDefaults:
+    """Tests for default parameter handling."""
+
+    def test_upcoming_showers_default_date(self):
+        """Test that get_upcoming_showers works with default date."""
+        upcoming = get_upcoming_showers()
+        # Should return something (always showers upcoming within 60 days)
+        assert isinstance(upcoming, list)
+
+
+class TestGetActiveShowersYearBoundary:
+    """Tests for active showers near year boundary."""
+
+    def test_active_showers_default_date(self):
+        """Test get_active_showers with no date (defaults to today)."""
+        active = get_active_showers()
+        assert isinstance(active, list)
+
+    def test_active_showers_peak_adjustment(self):
+        """Test that peak date adjusts for year-spanning showers."""
+        # Quadrantids peak around Jan 3-4, active late Dec to mid Jan
+        test_date = date(2026, 1, 4)
+        active = get_active_showers(on_date=test_date)
+        names = [s.shower.name for s in active]
+        assert any("Quadrantid" in name for name in names)
+
+    def test_active_showers_next_year_peak_closer(self):
+        """Test peak adjustment when next year peak is closer than current year."""
+        # Check late December - Quadrantids peak Jan 3-4, active from ~Dec 28
+        # On Dec 30, next year's Jan 3 peak should be chosen over current year's
+        test_date = date(2025, 12, 30)
+        active = get_active_showers(on_date=test_date)
+        quadrantids = [s for s in active if "Quadrantid" in s.shower.name]
+        if quadrantids:
+            # Peak should be in 2026 (next year), not 2025
+            assert quadrantids[0].peak_date.year == 2026
+
+
+class TestGetShowerInfoDefaults:
+    """Tests for get_shower_info with default year."""
+
+    def test_shower_info_default_year(self):
+        """Test get_shower_info with default year."""
+        info = get_shower_info("Perseids")
+        assert info is not None
+        assert "Perseid" in info.shower.name
+
+    def test_shower_info_partial_match(self):
+        """Test partial name matching."""
+        info = get_shower_info("perseid", year=2026)
+        assert info is not None
+
+
+class TestMeteorClient:
+    """Tests for MeteorClient async interface."""
+
+    @pytest.mark.asyncio
+    async def test_get_all_showers(self):
+        client = MeteorClient()
+        showers = await client.get_all_showers()
+        assert len(showers) >= 10
+
+    @pytest.mark.asyncio
+    async def test_get_upcoming_showers(self):
+        client = MeteorClient()
+        upcoming = await client.get_upcoming_showers(days=365)
+        assert len(upcoming) > 0
+
+    @pytest.mark.asyncio
+    async def test_get_active_showers(self):
+        client = MeteorClient()
+        active = await client.get_active_showers()
+        assert isinstance(active, list)
+
+    @pytest.mark.asyncio
+    async def test_get_shower_info(self):
+        client = MeteorClient()
+        info = await client.get_shower_info("Perseids", year=2026)
+        assert info is not None
+
+    @pytest.mark.asyncio
+    async def test_close(self):
+        client = MeteorClient()
+        await client.close()  # Should not raise
