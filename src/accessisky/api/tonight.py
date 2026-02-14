@@ -6,6 +6,7 @@ designed for blind/VI users who want a quick overview.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import date
@@ -381,56 +382,55 @@ class TonightSummary:
 
         data = TonightData()
 
-        # Fetch all data, handling failures gracefully
-        try:
-            moon_phase, moon_illum, moon_rise, moon_set = await self._get_moon_data(
-                target_date=target_date,
-                latitude=latitude,
-                longitude=longitude,
+        # Fetch all data concurrently; each helper already handles its own errors
+        results = await asyncio.gather(
+            self._get_moon_data(target_date, latitude, longitude),
+            self._get_iss_data(latitude, longitude),
+            self._get_planets_data(target_date),
+            self._get_meteor_data(target_date),
+            self._get_aurora_data(),
+            self._get_viewing_data(latitude, longitude, target_date),
+            return_exceptions=True,
+        )
+
+        # Unpack results, treating exceptions as missing data
+        moon_result = results[0]
+        if not isinstance(moon_result, BaseException):
+            data.moon_phase, data.moon_illumination, data.moon_rise_time, data.moon_set_time = (
+                moon_result
             )
-            data.moon_phase = moon_phase
-            data.moon_illumination = moon_illum
-            data.moon_rise_time = moon_rise
-            data.moon_set_time = moon_set
-        except Exception as e:
-            logger.error(f"Moon data fetch failed: {e}")
+        else:
+            logger.error(f"Moon data fetch failed: {moon_result}")
 
-        try:
-            data.iss_passes = await self._get_iss_data(
-                latitude=latitude,
-                longitude=longitude,
-            )
-        except Exception as e:
-            logger.error(f"ISS data fetch failed: {e}")
+        iss_result = results[1]
+        if not isinstance(iss_result, BaseException):
+            data.iss_passes = iss_result
+        else:
+            logger.error(f"ISS data fetch failed: {iss_result}")
 
-        try:
-            data.visible_planets = await self._get_planets_data(target_date=target_date)
-        except Exception as e:
-            logger.error(f"Planet data fetch failed: {e}")
+        planets_result = results[2]
+        if not isinstance(planets_result, BaseException):
+            data.visible_planets = planets_result
+        else:
+            logger.error(f"Planet data fetch failed: {planets_result}")
 
-        try:
-            data.active_meteor_showers = await self._get_meteor_data(target_date=target_date)
-        except Exception as e:
-            logger.error(f"Meteor data fetch failed: {e}")
+        meteor_result = results[3]
+        if not isinstance(meteor_result, BaseException):
+            data.active_meteor_showers = meteor_result
+        else:
+            logger.error(f"Meteor data fetch failed: {meteor_result}")
 
-        try:
-            aurora_kp, aurora_activity = await self._get_aurora_data()
-            data.aurora_kp = aurora_kp
-            data.aurora_activity = aurora_activity
-        except Exception as e:
-            logger.error(f"Aurora data fetch failed: {e}")
+        aurora_result = results[4]
+        if not isinstance(aurora_result, BaseException):
+            data.aurora_kp, data.aurora_activity = aurora_result
+        else:
+            logger.error(f"Aurora data fetch failed: {aurora_result}")
 
-        try:
-            score, cloud_cover, description = await self._get_viewing_data(
-                latitude=latitude,
-                longitude=longitude,
-                target_date=target_date,
-            )
-            data.viewing_score = score
-            data.cloud_cover_percent = cloud_cover
-            data.viewing_description = description
-        except Exception as e:
-            logger.error(f"Viewing data fetch failed: {e}")
+        viewing_result = results[5]
+        if not isinstance(viewing_result, BaseException):
+            data.viewing_score, data.cloud_cover_percent, data.viewing_description = viewing_result
+        else:
+            logger.error(f"Viewing data fetch failed: {viewing_result}")
 
         # Generate summary text
         data.summary_text = generate_summary_text(data)
