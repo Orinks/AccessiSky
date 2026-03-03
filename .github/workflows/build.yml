@@ -125,4 +125,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
+      - name: Update WordPress
+        if: ${{ inputs.dry_run != true }}
+        uses: Orinks/orinks-github-releases/.github/workflows/push-releases.yml@master
+        secrets:
+          WP_PUSH_TOKEN: ${{ secrets.WP_PUSH_TOKEN }}
+          WP_SITE_URL: ${{ secrets.WP_SITE_URL }}
