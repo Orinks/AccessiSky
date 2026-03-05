@@ -32,6 +32,8 @@ jobs:
         env:
           WP_TOKEN: ${{ secrets.WP_PUSH_TOKEN }}
           WP_URL: ${{ secrets.WP_SITE_URL }}
+          REPO: ${{ github.repository }}
+          BUST_CACHE_FIRST: ${{ inputs.bust_cache_first || false }}
         run: |
           set -euo pipefail
           python3 .github/scripts/push_releases.py
