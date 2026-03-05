@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
       - name: Validate required secrets
         env:
           WP_TOKEN: ${{ secrets.WP_PUSH_TOKEN }}
