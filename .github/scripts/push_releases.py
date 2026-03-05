@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import time
 import urllib.request
 from typing import Any
@@ -13,23 +12,23 @@ REPO = os.environ["REPO"]
 WP_URL = os.environ["WP_URL"].rstrip("/")
 WP_TOKEN = os.environ["WP_TOKEN"]
 BUST_CACHE_FIRST = os.environ.get("BUST_CACHE_FIRST", "false").lower() == "true"
+GH_TOKEN = os.environ.get("GITHUB_TOKEN")
 HEADERS = {
     "Content-Type": "application/json",
     "X-OGR-Token": WP_TOKEN,
 }
+GH_API_HEADERS: dict[str, str] = {
+    "Accept": "application/vnd.github+json",
+}
+if GH_TOKEN:
+    GH_API_HEADERS["Authorization"] = f"Bearer {GH_TOKEN}"
 
 
 def gh_json(endpoint: str) -> Any:
-    """Run `gh api` and return the parsed JSON payload."""
-    command = [
-        "gh",
-        "api",
-        endpoint,
-        "-H",
-        "Accept: application/vnd.github+json",
-    ]
-    result = subprocess.run(command, capture_output=True, text=True, check=True)
-    return json.loads(result.stdout)
+    url = f"https://api.github.com/{endpoint}"
+    request = urllib.request.Request(url, headers=GH_API_HEADERS)
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
 
 
 def fetch_payload() -> dict[str, Any]:
