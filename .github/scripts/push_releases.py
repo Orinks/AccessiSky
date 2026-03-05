@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import time
+import urllib.error
 import urllib.request
 from typing import Any
 
@@ -24,16 +25,23 @@ if GH_TOKEN:
     GH_API_HEADERS["Authorization"] = f"Bearer {GH_TOKEN}"
 
 
-def gh_json(endpoint: str) -> Any:
+def gh_json(endpoint: str, allow_missing: bool = False) -> Any:
     url = f"https://api.github.com/{endpoint}"
     request = urllib.request.Request(url, headers=GH_API_HEADERS)
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.load(response)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as exc:
+        if allow_missing and exc.code == 404:
+            return None
+        raise
 
 
 def fetch_payload() -> dict[str, Any]:
-    latest = gh_json(f"repos/{REPO}/releases/latest")
-    all_releases = gh_json(f"repos/{REPO}/releases?per_page=20")
+    latest = gh_json(f"repos/{REPO}/releases/latest", allow_missing=True)
+    all_releases = gh_json(f"repos/{REPO}/releases?per_page=20", allow_missing=True)
+    if not isinstance(all_releases, list):
+        all_releases = []
     return {
         "repo": REPO,
         "releases": all_releases[:20],
