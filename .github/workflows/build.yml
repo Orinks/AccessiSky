@@ -127,8 +127,10 @@ jobs:
 
   push-to-wordpress:
     needs: release
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
-    uses: Orinks/orinks-github-releases/.github/workflows/push-releases.yml@master
+    if: ${{ needs.release.result == 'success' }}
+    uses: ./.github/workflows/push-releases.yml
+    with:
+      bust_cache_first: false
     secrets:
       WP_PUSH_TOKEN: ${{ secrets.WP_PUSH_TOKEN }}
       WP_SITE_URL: ${{ secrets.WP_SITE_URL }}
