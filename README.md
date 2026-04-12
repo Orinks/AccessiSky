@@ -9,6 +9,12 @@
 
 AccessiSky helps you stay aware of celestial events — whether or not you can see them. Built with full screen reader support, it brings ISS passes, moon phases, meteor showers, and more to everyone.
 
+## Project Status
+
+This repository is being archived and is no longer under active development.
+
+Forks and community continuations are very welcome. If you'd like to keep AccessiSky going, please feel free to fork the project and continue building on it.
+
 ## Features
 
 - **ISS Tracking**: Know when the International Space Station passes over your location
